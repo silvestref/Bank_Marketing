@@ -420,12 +420,12 @@ plt.show()
 
 fig, ax = plt.subplots(2, 2, figsize=(16, 8))
 plt.subplots_adjust(wspace=0.2, hspace=0.3)
-sns.countplot(data=data2, x="default", ax=ax[0,1])
-ax[0,1].set_title("default")
-ax[0,1].set_xlabel("")
 sns.histplot(data=data2, x="balance", kde=True, ax=ax[0,0], color="g")
 ax[0,0].set_title("balance")
 ax[0,0].set_xlabel("")
+sns.countplot(data=data2, x="default", ax=ax[0,1])
+ax[0,1].set_title("default")
+ax[0,1].set_xlabel("")
 sns.countplot(data=data2, x="housing", ax=ax[1,0])
 ax[1,0].set_title("housing")
 ax[1,0].set_xlabel("")
@@ -508,13 +508,228 @@ plt.show()
 # guarda relacion con "previous".
 
 
+# Una vez conocida la distribución de las variables con las que vamos a trabajar, procederemos a responder las
+# hipótesis que inicialmente habíamos planteado, esto lo lograremos mediante un análisis bivariado de nuestras
+# variables de entrada con nuestra variable de salida.
 
 
+# VARIABLES DE INFORMACIÓN DEL CLIENTE VS "deposit"
+
+fig, ax = plt.subplots(2, 2, figsize=(16, 8))
+plt.subplots_adjust(hspace=0.3)
+sns.histplot(data=data2, x="age", kde=True, ax=ax[0,0], hue=data2.deposit, multiple="stack", color="g")
+ax[0,0].set_title("age")
+ax[0,0].set_xlabel("")
+sns.countplot(data=data2, x="marital", ax=ax[0,1], hue=data2.deposit, palette="Set2")
+ax[0,1].set_title("marital")
+ax[0,1].set_xlabel("")
+sns.countplot(data=data2, x="education", ax=ax[1,0], hue=data2.deposit, palette="Set2")
+ax[1,0].set_title("education")
+ax[1,0].set_xlabel("")
+sns.countplot(data=data2, x="contact", ax=ax[1,1], hue=data2.deposit, palette="Set2")
+ax[1,1].set_title("contact")
+ax[1,1].set_xlabel("")
+fig.suptitle('Variables de información del cliente vs Churn', fontsize=16)
+plt.show()
+
+fig, ax = plt.subplots(1, 1, figsize=(14, 4))
+sns.countplot(data=data2, x="job", hue=data2.deposit)
+ax.set_title("job")
+ax.set_ylabel("")
+plt.show()
+
+# En primer lugar, mediante el histograma observamos que la curva de densidad de las edades de los clientes que
+# solicitarion y no solicitaron el deposito son muy similares, obteniendo en ambos casos los picos mas altos
+# en edades que entran en el rango de los 30 y 40 años, y que estos picos se diferencian por relativamente
+# pocas cifras de las demas edades. Es decir, no existe un patron claro que indique de forma significativa que
+# una edad en especifico es mas propensa a solicitar un deposito a plazo fijo o no.
+
+# Por otro lado, podemos observar que la variable "marital" no presenta relacion alguna con la solicitud de un
+# deposito a plazo fijo, ya que la cantidad de clientes que solicitaron o no el deposito se reparten de forma
+# equitativa entre los que son solteros, casados y divorciados
+
+# El mismo comportamiento se puede apreciar en la variable "education", donde la cantidad de clientes solicitantes
+# y no solicitantes son muy parecidas en todos los grados de educacion.
+
+# Con respecto a "contact", podemos identificar que los clientes con un medio de comunicacion desconocido por
+# el banco son menos propensos a solicitar un deposito a plazo fijo, esta informacion podria no ser tan
+# relevante debido a que como el medio de comunicacion es desconocido, estos datos podrian ir a cualquier de
+# las dos categorias restantes, sesgando un poco el resultado del analisis.
+
+# Por ultimo, en la variable "job" podemos observar que los clientes con trabajo "blue-collar" (obrero) son
+# menos propensos a solicitar un deposito a plazo fijo, pobrablemente por los pocos ingresos que se obtienen
+# de esta labor, por otra parte, observamos que los estudiantes (student) y los retirados (retired) son 
+# levemente mas propensos a solicitar este tipo de deposito, posiblemente debido a la cultura financiera que 
+# existe en la mayoria de centros educativos y la alta disponibilidad de dinero que se tiene al haberse jubilado.
+
+# Resumiendo toda la informacion obtenida tenemos que: La edad de los clientes no es un factor muy influyente
+# para determinar si estos van a solicitar un deposito a plazo fijo o no, ademas que tanto su estado marital
+# como educacional tampoco influyen en esta decision, sin embargo, se observa que los clientes con un medio de
+# contacto desconocido por el banco son mas propensos a no solicitar este tipo de deposito, a la vez que los
+# que tienen trabajos relacionados con la mano de obra tienen una tendencia a tampoco solicitar este servicio,
+# y las personas que son estudiantes o retiradas a menudo aceptan el deposito a plazo fijo.
+
+# Respondiendo a las hipótesis tenemos que:
+# H1: La edad del cliente no afecta de forma significativa en la decision de solicitar un deposito a plazo fijo.
+# H2: Se observo que los estudiantes y las personas retiradas son ligeramente mas propensas a solicitar un
+# deposito a plazo fijo
+# H3: El estado marital del cliente no influye en la decision de solicitar un deposito a plazo fijo
+# H4: El grado de educacion alcanzado por el cliente no inluye en la decision de solicitar un deposito a plazo fijo
+# H9: Los clientes con un medio de contacto desconocido por el banco tienen ligeramente mas probabilidad de no
+# solicitar un deposito a plazo fijo
 
 
+# VARIABLES DE INFORMACIÓN BANCARIA VS "deposit"
+
+fig, ax = plt.subplots(2, 2, figsize=(16, 8))
+plt.subplots_adjust(hspace=0.3)
+sns.histplot(data=data2, x="balance", kde=True, ax=ax[0,0], hue=data2.deposit, multiple="stack", color="g")
+ax[0,0].set_title("balance")
+ax[0,0].set_xlabel("")
+sns.countplot(data=data2, x="default", ax=ax[0,1], hue=data2.deposit, palette="Set2")
+ax[0,1].set_title("default")
+ax[0,1].set_xlabel("")
+sns.countplot(data=data2, x="housing", ax=ax[1,0], hue=data2.deposit, palette="Set2")
+ax[1,0].set_title("housing")
+ax[1,0].set_xlabel("")
+sns.countplot(data=data2, x="loan", ax=ax[1,1], hue=data2.deposit, palette="Set2")
+ax[1,1].set_title("loan")
+ax[1,1].set_xlabel("")
+fig.suptitle('Variables de información del cliente vs Churn', fontsize=16)
+plt.show()
+
+# Del primer grafico, mediante el histograma observamos que las curvas de densidad del saldo de los clientes en
+# el banco son muy similares para los que solicitaron y no solicitaron el deposito a plazo fijo, siguiendo
+# casi una distribucion normal, no se observa algun patron marcado que indique que un rango de saldo en especifico
+# propicie o no la solicitud de un deposito a plazo fijo.
+
+# Con respecto a "default", tampoco se puede observar algun patron especifico que indique que el ser un cliente
+# moroso o no afecte en la decision de solicitar o no un deposito a plazo fijo, ya que la distribucion de estos
+# se reparten de forma equitativa en ambas ocaciones
+
+# Con "housing" no podemos decir lo mismo, ya que aqui si se aprecia que los clientes que no solicitaron un
+# prestamo de vivienda tienen una tendencia a solicitar un deposito a plazo fijo, mientras que los que si
+# solicitaron un prestamo de vivienda tienen una tendencia a no solicitar este tipo de deposito. Esto podria
+# deberse a que como ya tienen una deuda con el banco, ese dinero solicitado no puede destinarse a otros fines
+# que no sea la adquision de una propiedad.
+
+# Por ultimo, en la variable "loan" nuevamente no se observa un patron claro que indique una inclinacion hacia
+# solicitar o no solicitar un deposito a plazo fijo si el cliente ha solicitado un prestamo personal o no.
+
+# Resumiendo toda la informacion obtenida tenemos que: El saldo de los clientes en sus cuentas bancarias no
+# es un factor del que se pueda deducir si estos en un futuro solicitaran un deposito a plazo fijo o no, lo 
+# mismo podemos decir con respecto a si este cliente tiene mora crediticia o no, y si este solicito un prestamo
+# personal o no. Sin embargo, observamos un patron claro que indica que los clientes que solicitaron un prestamo
+# de vivienda son menos propensos a solicitar un deposito a plazo fijo, probablemente porque ese dinero solicitado
+# sera destinado a otros fines.
+
+# Respondiendo a las hipótesis tenemos que:
+# H5: El hecho de tener o no tener mora crediticia no influye en la decision de solicitar o no un deposito a
+# plazo fijo
+# H6: El dinero que los clientes tengan en su cuenta bancaria no influye en la decision de solicitar o no un
+# deposito a plazo fijo
+# H7: Los clientes que solicitaron un prestamo de vivienda al banco son menos propensos a solicitar un deposito
+# a plazo fijo
+# H8: El hecho de solicitar o no un prestamo personal al banco no influye en la decision de solicitar o no un
+# deposito a plazo fijo
 
 
+# VARIABLES DE CAMPAÑA VS "deposit"
 
+fig, ax = plt.subplots(2, 1, figsize=(12, 8))
+plt.subplots_adjust(wspace=0.2, hspace=0.3)
+sns.countplot(data=data2, x="day", hue=data2.deposit, ax=ax[0])
+ax[0].set_title("day")
+ax[0].set_xlabel("")
+ax[0].set_xticklabels(range(1,32))
+sns.countplot(data=data2, x="month", ax=ax[1], order=['jan', 'feb', 'mar', 'apr', 'may', 'jun', 'jul', 'aug',
+                                                      'sep', 'oct', "nov", "dec"], hue=data2.deposit)
+ax[1].set_title("month")
+ax[1].set_xlabel("")
+fig.suptitle('Distribución de las variables de información del cliente', fontsize=16)
+plt.show()
+
+
+fig, ax = plt.subplots(2, 2, figsize=(16, 8))
+plt.subplots_adjust(wspace=0.2, hspace=0.3)
+sns.histplot(data=data, x="duration", kde=True, hue=data.deposit, ax=ax[0,0], multiple="stack", color="g")
+ax[0,0].set_title("duration")
+ax[0,0].set_xlabel("")
+sns.countplot(data=data2, x="campaign", hue=data2.deposit, ax=ax[0,1])
+ax[0,1].set_title("campaign")
+ax[0,1].set_xlabel("")
+sns.countplot(data=data2, x="previous", hue=data2.deposit, ax=ax[1,0])
+ax[1,0].set_title("previous")
+ax[1,0].set_xlabel("")
+sns.countplot(data=data2, x="poutcome", hue=data2.deposit, ax=ax[1,1])
+ax[1,1].set_title("poutcome")
+ax[1,1].set_xlabel("")
+fig.suptitle('Distribución de las variables de información del cliente', fontsize=16)
+plt.show()
+
+# En primer lugar podemos observar que los dias en donde se tuvo mayor exito con respecto a la solicitud de un
+# deposito a plazo fijo son los dias 1 y 10 de cada mes, el exito que se tiene en el dia 1 puede deberse a que
+# este es un dia despues del que los clientes reciben su pago mensual por laborar, entonces, al tener una
+# cantidad considerable en sus manos, es mas facil presuadirlos para que lo inviertan en el banco, tambien
+# podemos ver que este dia es uno de los que menos contacto se tiene con el cliente, por lo tanto se podria
+# recomendar para la proxima campaña aprovechar este dia para persuadir a mas personas. Con respecto a los dias
+# en los que no se tuvo exito, podemos observar que estos son el 19, 20, 28 y 29 de cada mes.
+
+# Por otra parte, observamos que los meses en los que se tuvo mayor exito fueron marzo, septiembre, octubre y
+# en menor medida diciembre, mientras que el mes en el que se tuvo un mayor fracaso fue mayo.
+
+# Con respecto a la variable "duration", se puede observar que en un principio los pocos segundos de comunicacion
+# con el cliente tienen una proporcion similar de clientes que solicitarion y no solicitaron el deposito, y que
+# a medida que el tiempo de contacto se vaya prolongando, hay mejores probabilidades de que este termine 
+# aceptando realizar este tipo de deposito. Esta es una conducta normal, ya que cuando una persona esta
+# interesada en adquirir algun producto o servicio, surgen diversas preguntas acerca de ello, lo cual, naturalmente
+# prolonga el tiempo de comunicacion con el individuo que brinda dicho servicio.
+
+# En la variable "campaign" se puede apreciar que no existe un patron que indique con certeza que un determinado
+# numero de contactos favorece a la solicitud de un deposito a plazo fijo, aunque observamos que existen mas
+# clientes que aceptaron realizar el deposito cuando se realizo solo 1 contacto con ellos, la diferencia entre
+# los que aceptaron o no, no es muy grande para considerarlo relevante.
+
+# Con "previous" no podemos decir lo mismo, ya que se ve que los clientes que no han sido contactados en una
+# campaña anterior para ofrecerles este tipo de deposito son menos propensos a aceptar dicho deposito en la
+# campaña actual, mientras que aquellos que si han sido contactados anteriormente, tienen una leve inclinacion
+# a solicitar este tipo de servicio.
+
+# Por ultimo, respecto a la variable "poutcome", podemos observar que aquellos clientes de los que no se sabe
+# si aceptaron o no solicitar un deposito a plazo fijo tienen una tendencia a no aceptar este tipo de deposito
+# en la campaña actual, cabe mencionar que si su decision fue etiquetada como desconocida se podria deberse a que
+# son nuevos clientes, ya que esta variable guarda relacion con "previous", en donde se puede observar
+# que la cantidad de clientes a los que no se les han contactado en la campaña anterior (0) es la misma que los
+# que los que estan etiquetados como "unknown". Por otro lado observamos que aquellos clientes a los cuales se
+# les pudo persuadir para solicitar este tipo de deposito en la campaña anterior, con mucha probabilidad volveran
+# a aceptar solicitar este servicio en la campaña actual.
+
+# Resumiendo toda la informacion obtenida tenemos que: Los dias que registraron mayor exito en la solicitud de
+# un deposito a plazo fijo fueron los 1 y 10 de cada mes, mientras que los que menos exito tuvieron fueron los
+# dias 19, 20, 28 y 29. Asimismo los meses de mayor exito fueron Marzo, Septiembre, Octubre y Diciembre, y el 
+# de menor exito Mayo. Tambien se observo que si se tiene una comunicacion corta con el cliente, la posibilidad
+# que este acepte solicitar este tipo de deposito es casi la misma que la de no solicitarlo, y que mientras
+# mayor sea el tiempo de contacto, mayor sera la posibilidad de tener exito en su persuacion. El numero de
+# contactos que se tiene con el cliente parece no afectar en su decision, sin embargo, variables referentes a
+# la campaña anterior como "previous" y "poutcome" parecen si afectar en esta decision, donde se pudo identificar
+# que aquellos clientes a los cuales no se les contacto en la campaña anterior y cuyo resultado de si aceptaron
+# solicitar el deposito a plazo fijo o no es desconocido, tienen una tendencia a no solicitar este tipo de 
+# deposito en la campaña actual, mientras que aquellos de los que se sabe que si aceptaron solicitar este
+# deposito en la campaña anterior, con mucha probabilidad volveran a solicitarlo en la campaña actual.
+
+# Respondiendo a las hipótesis tenemos que:
+# H10: Los dias en los que se observo que es mas probable convencer a los clientes de solicitar un deposito a
+# plazo fijo fueron el 1 y 10 de cada mes
+# H11: Los meses en los que se observo que es mas probable convencer a los clientes de solicitar un deposito a
+# plazo fijo fueron marzo, septiembre, octubre y diciembre
+# H12: A mayor duracion en el tiempo de contacto con el cliente mayores posibilidades hay de que este termine
+# aceptando solicitar un deposito a plazo fijo
+# H13: El numero de contactos que se tiene con el cliente parece no afectar en su decision de solicitar o no
+# un deposito a plazo fijo
+# H14: El numero de contactos que se tuvo con el cliente en la campaña anterior afecta en la posibilidad de 
+# solicitar un deposito a plazo fijo
+# H15: Aquellos clientes que solicitaron un deposito a plazo fijo en la campaña anterior con mucha probabilidad
+# volveran a solicitar este tipo de deposito en la campaña actual
 
 
 

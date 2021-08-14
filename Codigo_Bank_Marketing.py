@@ -54,6 +54,7 @@ from sklearn.experimental import enable_iterative_imputer
 from sklearn.impute import IterativeImputer
 from sklearn.ensemble import RandomForestRegressor
 from matplotlib.ticker import FormatStrFormatter
+import association_metrics as am
 
 # El conjunto de datos con el que vamos a tratar almacena características de 11162 personas a los que un banco
 # contacto para ofrecerles el servicio de deposito a plazo fijo, e indica si estos al final decidieron adquirir
@@ -574,7 +575,8 @@ plt.show()
 # H2: Se observo que los estudiantes y las personas retiradas son ligeramente mas propensas a solicitar un
 # deposito a plazo fijo
 # H3: El estado marital del cliente no influye en la decision de solicitar un deposito a plazo fijo
-# H4: El grado de educacion alcanzado por el cliente no inluye en la decision de solicitar un deposito a plazo fijo
+# H4: El grado de educacion alcanzado por el cliente no inluye de forma significativa en la decision de
+# solicitar un deposito a plazo fijo
 # H9: Los clientes con un medio de contacto desconocido por el banco tienen ligeramente mas probabilidad de no
 # solicitar un deposito a plazo fijo
 
@@ -630,8 +632,8 @@ plt.show()
 # deposito a plazo fijo
 # H7: Los clientes que solicitaron un prestamo de vivienda al banco son menos propensos a solicitar un deposito
 # a plazo fijo
-# H8: El hecho de solicitar o no un prestamo personal al banco no influye en la decision de solicitar o no un
-# deposito a plazo fijo
+# H8: El hecho de solicitar o no un prestamo personal al banco no influye de forma significativa en la
+# decision de solicitar o no un deposito a plazo fijo
 
 
 # VARIABLES DE CAMPAÑA VS "deposit"
@@ -652,7 +654,7 @@ plt.show()
 
 fig, ax = plt.subplots(2, 2, figsize=(16, 8))
 plt.subplots_adjust(wspace=0.2, hspace=0.3)
-sns.histplot(data=data, x="duration", kde=True, hue=data.deposit, ax=ax[0,0], multiple="stack", color="g")
+sns.histplot(data=data2, x="duration", kde=True, hue=data2.deposit, ax=ax[0,0], multiple="stack", color="g")
 ax[0,0].set_title("duration")
 ax[0,0].set_xlabel("")
 sns.countplot(data=data2, x="campaign", hue=data2.deposit, ax=ax[0,1])
@@ -731,6 +733,146 @@ plt.show()
 # H15: Aquellos clientes que solicitaron un deposito a plazo fijo en la campaña anterior con mucha probabilidad
 # volveran a solicitar este tipo de deposito en la campaña actual
 
+
+# A lo largo del proceso de analisis para responder las hipotesis que inicialmente habiamos planteado, nos
+# hemos encontrado con algunos comportamientos y patrones particulares de los cuales se puede extraer informacion 
+# relevante para el analisis. Es por ello que en esta parte se compararan entre si algunas de las variables mas
+# relevantes con respecto a la decision de solicitar un deposito a plazo fijo con el fin de obtener insights 
+# que nos ayuden a entender un poco mas el comportamiento de los clientes.
+
+
+# "job" vs "housing"
+
+fig, ax = plt.subplots(1, 1, figsize=(16, 8))
+plt.subplots_adjust(wspace=0.2, hspace=0.3)
+sns.countplot(data=data2, x="job", hue=data2.housing)
+ax.set_title("job")
+ax.set_xlabel("")
+plt.show()
+
+# Del grafico podemos observar que los clientes que trabajan de obrero son los que en su gran mayoria solicitan
+# un prestamo de vivienda, es por ello que las personas con este tipo de trabajo son menos propensas a solicitar
+# un deposito a plazo fijo, ya que como vimos en analisis anteriores, el dinero que piden prestado al banco
+# va destinado a otros fines que no son los buscados en este analisis. Por otra parte, podemos observar que las
+# personas que son estudiantes o retirados son menos propensas a solicitar un prestamo de vivienda, por lo
+# tanto, uniendo los hilos con el analisis respecto a la variable "housing", es de esperar que estas personas
+# tengan mas probabilidades de solicitar un deposito a plazo fijo puesto que no tienen deudas con el banco, y 
+# probablemente su cultura financiera o experiencia les hace mas atractivo el hecho de invertir que de gastar.
+
+
+# "previous" vs "poutcome"
+
+fig, ax = plt.subplots(1, 1, figsize=(16, 8))
+plt.subplots_adjust(wspace=0.2, hspace=0.3)
+sns.countplot(data=data2, x="previous", hue=data2.poutcome)
+ax.set_title("previous")
+ax.set_xlabel("")
+plt.show()
+
+# Del siguiente grafico obtenemos un patron muy obvio en donde los clientes que no han sido contactados en la
+# campaña anterior, estan etiquetados como resultado desconocido en si solicitaron o no un deposito a plazo 
+# fijo en la campaña anterior. Por otra parte, podemos observar que efectivamente el numero de contactos que
+# se tiene con el cliente no afecta en su decision de solicitar o no este tipo de deposito, ya que como se
+# puede apreciar, las personas que solicitaron y no solicitar el deposito, se distribuyen de forma muy
+# equitativa.
+
+
+# "job" vs "duration"
+
+duration_mean = data2.groupby(["job"], as_index=False)["duration"].mean()
+
+fig, ax = plt.subplots(1, 1, figsize=(16, 8))
+plt.subplots_adjust(wspace=0.2, hspace=0.3)
+sns.barplot(data=duration_mean, x="duration", y="job")
+ax.set_title("previous")
+ax.set_xlabel("")
+plt.show()
+
+# Por ultimo, podemos observar que la media de tiempo de contacto que se tiene con cada uno de los clientes
+# pertenecientes a los distintos tipos de trabajo se distribuye de forma muy equitativa, donde la diferencia 
+# maxima que se puede apreciar es de 1 minuto. Aunque podemos ver que el tiempo de contacto que se tienen con
+# los clientes que se encuentran desempleados es ligeramente mayor al resto, esto podria deberse a que la 
+# situacion de estas personas les obligan a tener una fuente de ingresos para poder subsistir, por lo tanto,
+# el tiempo de contacto con ellos se ve mas prolongado al tener mas interes en consultar como es el
+# funcionamiento de este tipo de deposito y sus beneficios.
+
+
+# Para terminar con esta sección, graficaremos una matriz de correlación para identificar el comportamiento
+# conjunto de nuestras variables sobre otras. Como estamos tratando tanto con variables categóricas como
+# numéricas, será necesario aplicar la correlacion de Pearson para las caracteristicas numericas, y la V de
+# Cramer para las categoricas.
+
+
+# CORRELACION DE PEARSON
+
+data_corr = data2.copy()
+
+data_corr["deposit"] = LabelEncoder().fit_transform(data_corr["deposit"])
+
+plt.figure(figsize=(30, 20))
+corr = data_corr[["age","balance","day","duration","campaign","previous","deposit"]].corr()
+mask = np.triu(np.ones_like(corr, dtype=bool))
+ax = sns.heatmap(corr, mask=mask, xticklabels=corr.columns, yticklabels=corr.columns, annot=True, linewidths=.2, cmap='coolwarm', vmin=-1, vmax=1)
+
+# De la matriz observamos que las variables numericas con mayor correlacion hacia nuestra variable dependiente
+# son "duration" y "previous". La influencia de estas variables ya lo habiamos analizado y gracias a esta matriz
+# nuestras suposiciones estan mejor respaldadas. Respecto a "duration", habiamos llegado a la conclusion que
+# mientras mayor era el numero de segundos en el que se mantenia contacto con el cliente, mayores eran las
+# posibilidades de que este terminara aceptando solicitar el deposito. Y con respecto a "previous", identificamos
+# que los clientes que no habian sido contactados en una campaña anterior, tenian mas probabilidad de no 
+# solicitar el deposito en la campaña actual
+
+
+# V DE CRAMER
+
+data_corr = data2.copy()
+
+data_corr = data_corr.apply(lambda x: x.astype("category") if x.dtype == "O" else x)
+cramersv = am.CramersV(data_corr) 
+result = cramersv.fit()
+
+# Con respecto a la asociacion entre nuestras variables categoricas y nuestra variable dependiente podemos 
+# observar que aquellas cuyo valor de asociacion es mayor que el resto son "housing", "contact", "month" y
+# "poutcome", las cuales habiamos en analisis anteriores que presentaban ciertos patrones que indicaban la
+# inclinacion del cliente hacia solicitar o no solicitar un deposito a plazo fijo. Donde los clientes que
+# solicitaron un prestamo de vivienda eran menos propensos a solicitar este tipo de deposito, al iguales que
+# los clientes de los que no se conocia el medio de comunicacion por el cual se les contactaba. Con respecto
+# a los meses observamos que habian algunos en los que se tenian resultados muchos mas positivos y otros en
+# los que no habia mucho exito. Por ultimo, tambien pudimos identificar que aquellos clientes que habian 
+# solicitado realizar este tipo de deposito en la campaña anterior con mucha probabilidad volverian a solicitarlo
+# en la campaña actual, mientras que aquellos que eran nuevos en el banco y no se tenia un registro acerca de
+# su decision tenian una tendencia a no solicitar este servicio.
+
+# Gracias al valor de la asociacion de Cramer tambien podemos obtener algunos otros insights interesantes como:
+    
+# "month" vs "housing"
+
+fig, ax = plt.subplots(1, 1, figsize=(12, 8))
+plt.subplots_adjust(wspace=0.2, hspace=0.3)
+sns.countplot(data=data2, x="month", order=['jan', 'feb', 'mar', 'apr', 'may', 'jun', 'jul', 'aug', 'sep',
+                                            'oct', "nov", "dec"], hue=data2.housing)
+
+# En donde podemos observar que existe un numero significativo de clientes que han sido contactados por ultima
+# vez en Mayo y que han solicitado un prestamo de vivienda. Esto podria indicar que los clientes tienen una
+# tendencia a solicitar este prestamo un mes antes de Mayo, ya que se puede observar como en Abril el numero
+# de personas con esta solicitud van en aumento, y como pasado el mes de Mayo este numero decrece, volviendo
+# a un estado estandar en el que el numero de personas que no solicitaron este tipo de prestamos son mayores o
+# iguales a las que si lo solicitaron.
+
+
+# "job" vs "education"
+
+fig, ax = plt.subplots(1, 1, figsize=(12, 8))
+plt.subplots_adjust(wspace=0.2, hspace=0.3)
+sns.countplot(data=data2, x="job", hue=data2.education)
+ax.set_title("job")
+ax.set_xlabel("")
+
+# Por ultimo, podemos observar un patron completamente normal en donde la mayoria de personas que tienen cargos
+# relacionados con la gerencia, tienen estudios terciarios (universitarios o de instituto). Y que los demas
+# puestos de trabajo estan conformados por personas cuyo grado de educacion mayormente es secundario, excepto
+# en el caso de los obreros, retirados y amas de casa, donde la distribucion entre las personas con educacion
+# secundaria y primaria es casi equitativa.
 
 
 

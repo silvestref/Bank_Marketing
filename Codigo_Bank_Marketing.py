@@ -55,6 +55,7 @@ from sklearn.impute import IterativeImputer
 from sklearn.ensemble import RandomForestRegressor
 from matplotlib.ticker import FormatStrFormatter
 import association_metrics as am
+from collections import Counter
 
 # El conjunto de datos con el que vamos a tratar almacena características de 11162 personas a los que un banco
 # contacto para ofrecerles el servicio de deposito a plazo fijo, e indica si estos al final decidieron adquirir
@@ -873,6 +874,103 @@ ax.set_xlabel("")
 # puestos de trabajo estan conformados por personas cuyo grado de educacion mayormente es secundario, excepto
 # en el caso de los obreros, retirados y amas de casa, donde la distribucion entre las personas con educacion
 # secundaria y primaria es casi equitativa.
+
+
+#------------------------------------------------------------------------------------------------------------
+#                                           TRANSFORMACIÓN DE DATOS
+#------------------------------------------------------------------------------------------------------------
+
+# Como uno de los objetivos de este proyecto es implementar CatBoost para la prediccion de clientes que
+# solicitaran o no un deposito a plazo fijo en el futuro, no sera necesario codificar de forma manual nuestras
+# variables categoricas, ya que CatBoost internamente realiza este proceso por nosotros, implementando una
+# codicaficacion basada en Target Encoder con algunas modificaciones que el algoritmo cree pertinente. Solo
+# seria necesario aplicar una codificacion de etiqueta si nuestra variable dependiente es dicotomica. Sin
+# embargo, para demostrar que efectividad tiene el delegarle la codificacion a CatBoost y hacerlo de forma
+# manual en la precision de nuestro modelo, construiremos dos modelos utilizando ambas tecnicas y posteriomente
+# evaluaremos su rendimiento
+
+
+#------------------------
+# CON CODIFICACION MANUAL
+#------------------------
+
+# Puesto que el algoritmo que vamos a utilizar esta basado en árboles de decision, para evitar el aumento
+# exponencial de variables independientes al implementar una codificacion One Hot Econding y todos los problemas
+# que esto conyeva, podemos utilizar Label Encoder como alternativa, ya que los arboles de decision no se ven
+# perjudicados al tener variables ordinales que originalmente son nominales
+
+# Codificacion de variables en el conjunto con outliers
+data_cod = data.copy()
+
+cols = ["job", "marital", "education", "default", "housing", "loan", "contact", "month", "poutcome", "deposit"]
+
+for col in cols:
+    data_cod[col] = LabelEncoder().fit_transform(data_cod[col])
+    
+# Codificacion de variables en el conjunto sin outliers
+
+data2_cod = data2.copy()
+
+for col in cols:
+    data2_cod[col] = LabelEncoder().fit_transform(data2_cod[col])
+
+
+#------------------------
+# SIN CODIFICACION MANUAL
+#------------------------
+
+# Codificacion de etiqueta a la variable dependiente del conjunto con outliers 
+data["deposit"] = LabelEncoder().fit_transform(data["deposit"])
+
+# Codificacion de etiqueta a la variable dependiente del conjunto sin outliers 
+data2["deposit"] = LabelEncoder().fit_transform(data2["deposit"])
+
+
+
+#--------------------
+# REBALANCEO DE DATOS
+#--------------------
+
+# Empezaremos comprobando el número de muestras para cada una de las clases que tiene nuestra variable dependiente
+# para identificar si tenemos un conjunto de datos desbalanceado.
+
+plt.figure(figsize=(15, 8))
+sns.countplot(data=data2, x="deposit", palette=["#66c2a5", "#fc8d62"])
+plt.title("Distribución del número de muestras", fontsize=20)
+plt.show()
+
+counter_total = Counter(data["deposit"])
+print(counter_total)
+
+# Observamos que no tenemos una desproporcion muy grave con respecto al numero de muestras en cada clase, por
+# lo tanto, podemos obviar el uso de tecnicas de sobremuestreo y submuestreo para el rebalanceo de muestras.
+# Cabe mencionar que CatBoost tambien posee un hiperparámetro encargado de solucionar este problema, añadiendo
+# pesos a las muestras de la clase minoritaria para que su impacto en el modelo sea casi el mismo que el de la
+# clase mayoritaria, por lo tanto, podriamos hacer uso de esta funcion para mejorar un poco mas el rendimiento
+# predictivo de nuestro modelo.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 

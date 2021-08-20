@@ -1045,12 +1045,13 @@ print(counter_total)
 
 def objective(trial):   
 
-    params = {"iterations": trial.suggest_int("iterations",200,1200,100),
-              "learning_rate": trial.suggest_uniform("learning_rate", 0.001, 0.3),
+    params = {"iterations": trial.suggest_int("iterations",300,1200,100),
+              "learning_rate": trial.suggest_float("learning_rate", 0.01, 0.3),
               "depth": trial.suggest_int("depth", 4, 12, 1),
-              "l2_leaf_reg": trial.suggest_int("l2_leaf_reg", 1, 50, 1),
-              "random_strength":trial.suggest_int("random_strength", 1, 30, 1),
+              "l2_leaf_reg": trial.suggest_float("l2_leaf_reg", 0, 10),
+              "random_strength":trial.suggest_int("random_strength", 0, 40, 1),
               "bagging_temperature": trial.suggest_int("bagging_temperature", 0, 2, 1),
+              'max_ctr_complexity': trial.suggest_int('max_ctr_complexity', 0, 10),
               "auto_class_weights": "Balanced",
               "loss_function": "Logloss",
               "eval_metric": "AUC",
@@ -1058,7 +1059,7 @@ def objective(trial):
               "od_type" : "Iter",  # Parametros relacionados con early stop
               "od_wait" : 30,
               "use_best_model": True,
-              "random_seed": 21}
+              "random_seed": 42}
     
     # Identificación de variables categoricas
     categorical_features_indices = np.where(data.dtypes == np.object)[0]
@@ -1086,9 +1087,9 @@ best_1 = study.trials_dataframe()
 # Se ejecutó la función tres veces de forma independiente, y posterior a ello, se registro
 # la mejor combinación de parámetros que arrojo cada ejecución, siendo estas las siguientes:
 
-# 74.11% | iterarions=600, learning_rate=0.170105, depth=11, l2_leaf_reg=16, random_strength=23, bagging_temperature=1
-# 73.75% | iterarions=1200, learning_rate=0.23352, depth=7, l2_leaf_reg=18, random_strength=20, bagging_temperature=1
-# 73.72% | iterarions=1000, learning_rate=0.0896854, depth=10, l2_leaf_reg=15, random_strength=12, bagging_temperature=1
+# 73.96% | iterarions=600, learning_rate=0.166129, depth=7, l2_leaf_reg=0.963535, random_strength=11, bagging_temperature=1, max_ctr_complexity=0
+# 74.08% | iterarions=1200, learning_rate=0.246729, depth=9, l2_leaf_reg=7.2024, random_strength=33, bagging_temperature=1, max_ctr_complexity=2
+# 73.72% | iterarions=500, learning_rate=0.208787, depth=10, l2_leaf_reg=1.25048, random_strength=15, bagging_temperature=1, max_ctr_complexity=2
 
 # Procederemos a entrenar modelos CatBoost en base a estas tres combinaciones de hiperparámetros obtenidas
 # para determinar cual de ellas presenta mejores resultados al clasificar nuestros datos.
@@ -1098,27 +1099,26 @@ categorical_features_indices = np.where(data.dtypes == np.object)[0]
 train_pool = Pool(X_train, y_train, cat_features = categorical_features_indices)
 test_pool = Pool(X_test, y_test, cat_features = categorical_features_indices)
 
-
 # Para la primera combinación
-cb_1a = CatBoostClassifier(iterations=600, learning_rate=0.170105, depth=11, l2_leaf_reg=16, random_strength=23,
-                            bagging_temperature=1, auto_class_weights= "Balanced", loss_function = "Logloss",
-                            eval_metric = "AUC", task_type= "GPU",  random_seed=21)
+cb_1a = CatBoostClassifier(iterations=600, learning_rate=0.166129, depth=7, l2_leaf_reg=0.963535, random_strength=11,
+                            bagging_temperature=1, max_ctr_complexity=0, auto_class_weights= "Balanced", loss_function = "Logloss",
+                            eval_metric = "AUC", task_type= "GPU", use_best_model= True, random_seed=42)
 
 cb_1a.fit(train_pool, eval_set = test_pool)
 y_pred_1a = cb_1a.predict(X_test)
 
 # Para la segunda combinación
-cb_1b = CatBoostClassifier(iterations=1200, learning_rate=0.23352, depth=7, l2_leaf_reg=18, random_strength=20,
-                            bagging_temperature=1, auto_class_weights= "Balanced", loss_function = "Logloss",
-                            eval_metric = "AUC", task_type= "GPU",  random_seed=21)
+cb_1b = CatBoostClassifier(iterations=1200, learning_rate=0.246729, depth=9, l2_leaf_reg=7.2024, random_strength=33,
+                            bagging_temperature=1, max_ctr_complexity=2, auto_class_weights= "Balanced", loss_function = "Logloss",
+                            eval_metric = "AUC", task_type= "GPU", use_best_model= True, random_seed=42)
 
 cb_1b.fit(train_pool, eval_set = test_pool)
 y_pred_1b = cb_1b.predict(X_test)
 
 # Para la tercera combinación
-cb_1c = CatBoostClassifier(iterations=1000, learning_rate=0.0896854, depth=10, l2_leaf_reg=15, random_strength=12,
-                            bagging_temperature=1, auto_class_weights= "Balanced", loss_function = "Logloss",
-                            eval_metric = "AUC", task_type= "GPU",  random_seed=21)
+cb_1c = CatBoostClassifier(iterations=500, learning_rate=0.208787, depth=10, l2_leaf_reg=1.25048, random_strength=15,
+                            bagging_temperature=1, max_ctr_complexity=2, auto_class_weights= "Balanced", loss_function = "Logloss",
+                            eval_metric = "AUC", task_type= "GPU", use_best_model= True, random_seed=42)
 
 cb_1c.fit(train_pool, eval_set = test_pool)
 y_pred_1c = cb_1c.predict(X_test)
@@ -1181,12 +1181,11 @@ ax[2].set_title("COMBINACIÓN 3",fontsize=14)
 
 plt.show()
 
-# Con respecto a las matrices de confusion observamos que la combinacion 2 tiene ligeramente un mejor ratio
-# de aciertos al predecir si el cliente solicita el deposito a plazo fijo, esto a coste de un poco de precision
-# al predecir si estos no solicitan este deposito. Como nuestro objetivo es predecir que personas si haran la
-# solicitud, tomaremos en cuenta a la combinacion 2 como la que mejores resultados arrojo en la matriz de
-# confusion. Por consiguiente, la combinacion 3 seria considerada la que peores resultados mostro al estar por
-# debajo de la combinacion 2.
+# Con respecto a las matrices de confusion, observamos que la combinacion 2 presenta un ratio mejor equilibrado
+# al momento de predecir correctamente si un cliente solicita un deposito a plazo fijo o no, a la vez que 
+# tambien observamos que la combinacion 3 es la que peores resultado presenta al realizar esta clasificacion. Es
+# por ello que tomaremos en cuenta a la combinacion 2 como la que mejores resultados arrojo en este apartado de
+# evaluacion.
 
 y_pred_prob1a = cb_1a.predict_proba(X_test)[:,1]
 fpr_1a, tpr_1a, thresholds_1a = roc_curve(y_test, y_pred_prob1a)
@@ -1206,10 +1205,10 @@ plt.title('Curva ROC-AUC',fontsize=16)
 plt.legend()
 plt.show()
 
-# Del grafico de la curva ROC-AUC no podemos diferenciar claramente que combinacion es la que mejor tasa de 
-# verdaderos positivos (VP) y falsos positivos (FP) tiene, sin embargo, podemos observar que la curva de la
-# combinacion 3 tiende a ser levemente menor comparado con las demas combinaciones, por lo que combinado con
-# los resultados de las metricas, podemos ir descartando esta combinacion.
+# Del grafico de la curva ROC-AUC no podemos diferenciar claramente si la combinacion 1 o 2 es la que mejor tasa
+# de verdaderos positivos (VP) y falsos positivos (FP) tiene, sin embargo, podemos observar que la curva de la
+# combinacion 3 tiende a ser menor comparado con las demas combinaciones, por lo que combinado con los resultados
+# de las metricas anteriores, podemos ir descartando esta combinacion.
 
 print("AUC primera comb.: %.2f%%" % (auc_1a * 100.0))
 print("AUC segunda comb.: %.2f%%" % (auc_1b * 100.0))
@@ -1219,10 +1218,184 @@ print("AUC tercera comb.: %.2f%%" % (auc_1c * 100.0))
 # presenta una mejor tasa de VP y FP, ya que como habiamos deducido anteriormente, la combinacion 3 es la que
 # peores resultados arroja, y que tanto la combinacion 1 como la combinacion 2 presentan resultados similares,
 # sin embargo, la combinacion 2 presenta una ligera superioridad comparado con las demas combinaciones. Entonces,
-# comparando los resultados de las demas metricas vistas, podemos concluir que el modelo construido con la
+# uniendo los resultados de las metricas anteriormente vistas, podemos concluir que el modelo construido con la
 # combinacion 2 es el que mejor clasifica estos datos, por lo tanto, utilizaremos este modelo como referente
 # del conjunto de "Hiperparametros para datos con outliers y sin codificacion manual".
  
+
+#------------------------------
+# HIPERPARÁMETROS PARA DATOS CON OUTLIERS Y CON CODIFICACION MANUAL
+
+def objective(trial):   
+
+    params = {"iterations": trial.suggest_int("iterations",300,1200,100),
+              "learning_rate": trial.suggest_float("learning_rate", 0.01, 0.3),
+              "depth": trial.suggest_int("depth", 4, 12, 1),
+              "l2_leaf_reg": trial.suggest_float("l2_leaf_reg", 0, 10),
+              "random_strength":trial.suggest_int("random_strength", 0, 40, 1),
+              "bagging_temperature": trial.suggest_int("bagging_temperature", 0, 2, 1),
+              'max_ctr_complexity': trial.suggest_int('max_ctr_complexity', 0, 10),
+              "auto_class_weights": "Balanced",
+              "loss_function": "Logloss",
+              "eval_metric": "AUC",
+              "task_type": "GPU",
+              "od_type" : "Iter",  # Parametros relacionados con early stop
+              "od_wait" : 30,
+              "use_best_model": True,
+              "random_seed": 42}
+    
+    train_pool = Pool(X_train_cod, y_train_cod)
+    test_pool = Pool(X_test_cod, y_test_cod)
+    
+    # Inicialización y entrenamiento del modelo
+    model = CatBoostClassifier(**params) 
+    model.fit(train_pool, eval_set=test_pool, verbose=True)
+    
+    # Evaluación y obtención de métricas
+    preds = model.predict(X_test_cod)
+    metric = accuracy_score(y_test_cod, preds)
+    
+    return metric
+
+
+study = optuna.create_study(direction='maximize')
+study.optimize(objective, n_trials=70)
+
+print('Best trial: score {}, params {}'.format(study.best_trial.value, study.best_trial.params))
+best_2 = study.trials_dataframe()
+
+# Se ejecutó la función tres veces de forma independiente, y posterior a ello, se registro
+# la mejor combinación de parámetros que arrojo cada ejecución, siendo estas las siguientes:
+
+# 74.29% | iterarions=900, learning_rate=0.198706, depth=9, l2_leaf_reg=4.72514, random_strength=40, bagging_temperature=0, max_ctr_complexity=3
+# 74.23% | iterarions=1000, learning_rate=0.0686307, depth=7, l2_leaf_reg=6.87847, random_strength=2, bagging_temperature=1, max_ctr_complexity=1
+# 74.17% | iterarions=500, learning_rate=0.103597, depth=11, l2_leaf_reg=7.95198, random_strength=8, bagging_temperature=0, max_ctr_complexity=4
+
+# Procederemos a entrenar modelos CatBoost en base a estas tres combinaciones de hiperparámetros obtenidas
+# para determinar cual de ellas presenta mejores resultados al clasificar nuestros datos.
+
+train_pool = Pool(X_train_cod, y_train_cod)
+test_pool = Pool(X_test_cod, y_test_cod)
+
+# Para la primera combinación
+cb_2a = CatBoostClassifier(iterations=900, learning_rate=0.198706, depth=9, l2_leaf_reg=4.72514, random_strength=40,
+                            bagging_temperature=0, max_ctr_complexity=3, auto_class_weights= "Balanced", loss_function = "Logloss",
+                            eval_metric = "AUC", task_type= "GPU", use_best_model= True, random_seed=42)
+
+cb_2a.fit(train_pool, eval_set = test_pool)
+y_pred_2a = cb_2a.predict(X_test_cod)
+
+# Para la segunda combinación #Utilizando random seed
+cb_2b = CatBoostClassifier(iterations=1000, learning_rate=0.0686307, depth=7, l2_leaf_reg=6.87847, random_strength=2,
+                            bagging_temperature=1,  max_ctr_complexity=1, auto_class_weights= "Balanced", loss_function = "Logloss",
+                            eval_metric = "AUC", task_type= "GPU", use_best_model= True, random_seed=42)
+
+cb_2b.fit(train_pool, eval_set = test_pool)
+y_pred_2b = cb_2b.predict(X_test_cod)
+
+# Para la tercera combinación
+cb_2c = CatBoostClassifier(iterations=500, learning_rate=0.103597, depth=11, l2_leaf_reg=7.95198, random_strength=8,
+                            bagging_temperature=0, max_ctr_complexity=4, auto_class_weights= "Balanced", loss_function = "Logloss",
+                            eval_metric = "AUC", task_type= "GPU", use_best_model= True, random_seed=42)
+
+cb_2c.fit(train_pool, eval_set = test_pool)
+y_pred_2c = cb_2c.predict(X_test_cod)
+
+
+# COMPARACIÓN DE RENDIMIENTO ENTRE COMBINACIONES
+
+# Para la primera combinación
+f1_2a = f1_score(y_test_cod, y_pred_2a)
+acc_2a = accuracy_score(y_test_cod, y_pred_2a)
+auc_2a = roc_auc_score(y_test_cod, y_pred_2a)
+report_2a = classification_report(y_test_cod,y_pred_2a)
+
+# Para la segunda combinación
+f1_2b = f1_score(y_test_cod, y_pred_2b)
+acc_2b = accuracy_score(y_test_cod, y_pred_2b)
+auc_2b = roc_auc_score(y_test_cod, y_pred_2b)
+report_2b = classification_report(y_test_cod,y_pred_2b)
+
+# Para la tercera combinación
+f1_2c = f1_score(y_test_cod, y_pred_2c)
+acc_2c = accuracy_score(y_test_cod, y_pred_2c)
+auc_2c = roc_auc_score(y_test_cod, y_pred_2c)
+report_2c = classification_report(y_test_cod,y_pred_2c)
+
+
+print("F1 primera comb.: %.2f%%" % (f1_2a * 100.0))
+print("Accuracy primera comb.: %.2f%%" % (acc_2a * 100.0))
+print("-------------------------------")
+print("F1 segunda comb.: %.2f%%" % (f1_2b * 100.0))
+print("Accuracy segunda comb.: %.2f%%" % (acc_2b * 100.0))
+print("-------------------------------")
+print("F1 tercera comb.: %.2f%%" % (f1_2c * 100.0))
+print("Accuracy tercera comb.: %.2f%%" % (acc_2c * 100.0))
+
+print(report_2a)
+print("-------------------------------------------------")
+print(report_2b)
+print("-------------------------------------------------")
+print(report_2c)
+
+# Se puede observar que si bien todos los valores de métrica para todas las combinaciones que tenemos
+# son muy similares, la tercera combinacion es la que destaca por un pequeño margen porcentual de las
+# demas. Mientras que la primera combinacion parece tener ligeramente un rendimiento menor en comparacion
+# con las demas combinaciones
+
+fig, ax = plt.subplots(1, 3, figsize=(20, 5))
+
+sns.heatmap(confusion_matrix(y_test_cod, y_pred_2a), annot=True, fmt = "d", linecolor="k", linewidths=3, ax=ax[0])
+ax[0].set_title("COMBINACIÓN 1",fontsize=14)
+
+sns.heatmap(confusion_matrix(y_test_cod, y_pred_2b), annot=True, fmt = "d", linecolor="k", linewidths=3, ax=ax[1])
+ax[1].set_title("COMBINACIÓN 2",fontsize=14)
+
+sns.heatmap(confusion_matrix(y_test_cod, y_pred_2c), annot=True, fmt = "d", linecolor="k", linewidths=3, ax=ax[2])
+ax[2].set_title("COMBINACIÓN 3",fontsize=14)
+
+plt.show()
+
+# De las matrices de confusion podemos reafirmar nuestra suposicion al observar que la combinacion 3
+# es la que presenta un mejor ratio de VP y FP, mientras que la combinacion 1 esta por debajo de las
+# demas combinaciones, lo cual nos da motivos para poder ir descartando el modelo construido con esta
+# ultima combinacion.
+
+y_pred_prob2a = cb_2a.predict_proba(X_test_cod)[:,1]
+fpr_2a, tpr_2a, thresholds_2a = roc_curve(y_test_cod, y_pred_prob2a)
+y_pred_prob2b = cb_2b.predict_proba(X_test_cod)[:,1]
+fpr_2b, tpr_2b, thresholds_2b = roc_curve(y_test_cod, y_pred_prob2b)
+y_pred_prob2c = cb_2c.predict_proba(X_test_cod)[:,1]
+fpr_2c, tpr_2c, thresholds_2c = roc_curve(y_test_cod, y_pred_prob2c)
+
+plt.figure(figsize=(16, 8))
+plt.plot([0, 1], [0, 1], 'k--' )
+plt.plot(fpr_2a, tpr_2a, label='Combinación 1',color = "r")
+plt.plot(fpr_2b, tpr_2b, label='Combinación 2',color = "g")
+plt.plot(fpr_2c, tpr_2c, label='Combinación 3',color = "b")
+plt.xlabel('Ratio de Falsos Positivos')
+plt.ylabel('Ratio de Verdaderos Positivos')
+plt.title('Curva ROC-AUC',fontsize=16)
+plt.legend()
+plt.show()
+
+# Con respecto a la curva ROC-AUC no se puede visualizar una clara diferencia entre las curvas de la
+# combinacion 2 y 3, sin embargo, se puede observar que la curva de la combinacion 1 parece estar
+# por debajo en comparacion con el de las demas combinaciones, lo cual nos dice que no tiene un buen
+# ratio comparandola con las demas al momento de clasificar una muestra con la clase que le corresponde
+# (VP, FP).
+
+print("AUC primera comb.: %.2f%%" % (auc_2a * 100.0))
+print("AUC segunda comb.: %.2f%%" % (auc_2b * 100.0))
+print("AUC tercera comb.: %.2f%%" % (auc_2c * 100.0))
+
+# Por ultimo, con un valor porcentual de la métrica de la curva, podemos tomar una decision final
+# respecto a que combinacion elegir. Tomar esta decision no sera muy dificil, ya que en 3 de las 4
+# pruebas de evaluacion observamos claramente que la combinacion 3 es la que presento mejores resultados
+# en comparacion con las demas combinaciones, aunque la diferencia entre estas sea porcentual, es por 
+# ello que el modelo construido con esta combinacion sera usado como referente del conjunto de
+# "Hiperparametros para datos con outliers y con codificacion manual".
+
 
 #------------------------------
 # HIPERPARÁMETROS PARA DATOS SIN OUTLIERS Y SIN CODIFICACION MANUAL
@@ -1266,7 +1439,7 @@ study = optuna.create_study(direction='maximize')
 study.optimize(objective, n_trials=70)
 
 print('Best trial: score {}, params {}'.format(study.best_trial.value, study.best_trial.params))
-best_2 = study.trials_dataframe()
+best_3 = study.trials_dataframe()
 
 # Se ejecutó la función tres veces de forma independiente, y posterior a ello, se registró la mejor combinación
 # de parámetros que arrojó cada ejecución, siendo estas las siguientes:
@@ -1284,65 +1457,65 @@ train_pool = Pool(X2_train, y2_train, cat_features = categorical_features_indice
 test_pool = Pool(X2_test, y2_test, cat_features = categorical_features_indices)
 
 # Para la primera combinación
-cb_2a = CatBoostClassifier(iterations=900, learning_rate=0.118849, depth=7, l2_leaf_reg=9.48661, random_strength=15,
+cb_3a = CatBoostClassifier(iterations=900, learning_rate=0.118849, depth=7, l2_leaf_reg=9.48661, random_strength=15,
                             bagging_temperature=1, max_ctr_complexity= 6, auto_class_weights= "Balanced", loss_function = "Logloss",
                             eval_metric = "AUC", task_type= "GPU", use_best_model= True, random_seed=42)
 
-cb_2a.fit(train_pool, eval_set = test_pool)
-y_pred_2a = cb_2a.predict(X2_test)
+cb_3a.fit(train_pool, eval_set = test_pool)
+y_pred_3a = cb_3a.predict(X2_test)
 
 # Para la segunda combinación #Utilizando random seed
-cb_2b = CatBoostClassifier(iterations=1000, learning_rate=0.115247, depth=10, l2_leaf_reg=7.87387, random_strength=19,
+cb_3b = CatBoostClassifier(iterations=1000, learning_rate=0.115247, depth=10, l2_leaf_reg=7.87387, random_strength=19,
                             bagging_temperature=1,  max_ctr_complexity= 6, auto_class_weights= "Balanced", loss_function = "Logloss",
                             eval_metric = "AUC", task_type= "GPU", use_best_model= True, random_seed=42)
 
-cb_2b.fit(train_pool, eval_set = test_pool)
-y_pred_2b = cb_2b.predict(X2_test)
+cb_3b.fit(train_pool, eval_set = test_pool)
+y_pred_3b = cb_3b.predict(X2_test)
 
 # Para la tercera combinación
-cb_2c = CatBoostClassifier(iterations=700, learning_rate=0.0431437, depth=10, l2_leaf_reg=7.91287, random_strength=14,
+cb_3c = CatBoostClassifier(iterations=700, learning_rate=0.0431437, depth=10, l2_leaf_reg=7.91287, random_strength=14,
                             bagging_temperature=0, max_ctr_complexity= 4, auto_class_weights= "Balanced", loss_function = "Logloss",
                             eval_metric = "AUC", task_type= "GPU", use_best_model= True, random_seed=42)
 
-cb_2c.fit(train_pool, eval_set = test_pool)
-y_pred_2c = cb_2c.predict(X2_test)
+cb_3c.fit(train_pool, eval_set = test_pool)
+y_pred_3c = cb_3c.predict(X2_test)
 
 
 # COMPARACIÓN DE RENDIMIENTO ENTRE COMBINACIONES
 
 # Para la primera combinación
-f1_2a = f1_score(y2_test, y_pred_2a)
-acc_2a = accuracy_score(y2_test, y_pred_2a)
-auc_2a = roc_auc_score(y2_test, y_pred_2a)
-report_2a = classification_report(y2_test,y_pred_2a)
+f1_3a = f1_score(y2_test, y_pred_2a)
+acc_3a = accuracy_score(y2_test, y_pred_2a)
+auc_3a = roc_auc_score(y2_test, y_pred_2a)
+report_3a = classification_report(y2_test,y_pred_2a)
 
 # Para la segunda combinación
-f1_2b = f1_score(y2_test, y_pred_2b)
-acc_2b = accuracy_score(y2_test, y_pred_2b)
-auc_2b = roc_auc_score(y2_test, y_pred_2b)
-report_2b = classification_report(y2_test,y_pred_2b)
+f1_3b = f1_score(y2_test, y_pred_2b)
+acc_3b = accuracy_score(y2_test, y_pred_2b)
+auc_3b = roc_auc_score(y2_test, y_pred_2b)
+report_3b = classification_report(y2_test,y_pred_2b)
 
 # Para la tercera combinación
-f1_2c = f1_score(y2_test, y_pred_2c)
-acc_2c = accuracy_score(y2_test, y_pred_2c)
-auc_2c = roc_auc_score(y2_test, y_pred_2c)
-report_2c = classification_report(y2_test,y_pred_2c)
+f1_3c = f1_score(y2_test, y_pred_2c)
+acc_3c = accuracy_score(y2_test, y_pred_2c)
+auc_3c = roc_auc_score(y2_test, y_pred_2c)
+report_3c = classification_report(y2_test,y_pred_2c)
 
 
-print("F1 primera comb.: %.2f%%" % (f1_2a * 100.0))
-print("Accuracy primera comb.: %.2f%%" % (acc_2a * 100.0))
+print("F1 primera comb.: %.2f%%" % (f1_3a * 100.0))
+print("Accuracy primera comb.: %.2f%%" % (acc_3a * 100.0))
 print("-------------------------------")
-print("F1 segunda comb.: %.2f%%" % (f1_2b * 100.0))
-print("Accuracy segunda comb.: %.2f%%" % (acc_2b * 100.0))
+print("F1 segunda comb.: %.2f%%" % (f1_3b * 100.0))
+print("Accuracy segunda comb.: %.2f%%" % (acc_3b * 100.0))
 print("-------------------------------")
-print("F1 tercera comb.: %.2f%%" % (f1_2c * 100.0))
-print("Accuracy tercera comb.: %.2f%%" % (acc_2c * 100.0))
+print("F1 tercera comb.: %.2f%%" % (f1_3c * 100.0))
+print("Accuracy tercera comb.: %.2f%%" % (acc_3c * 100.0))
 
-print(report_2a)
+print(report_3a)
 print("-------------------------------------------------")
-print(report_2b)
+print(report_3b)
 print("-------------------------------------------------")
-print(report_2c)
+print(report_3c)
 
 # Observamos demasiada simulitud entre los puntajes obtenidos por las 3 combinaciones, donde la combinacion que
 # sobresale en comparacion de las demas en puntaje F1, no lo hace en Accuracy, es por ello que necesitamos mas
@@ -1352,13 +1525,13 @@ print(report_2c)
 
 fig, ax = plt.subplots(1, 3, figsize=(20, 5))
 
-sns.heatmap(confusion_matrix(y2_test, y_pred_2a), annot=True, fmt = "d", linecolor="k", linewidths=3, ax=ax[0])
+sns.heatmap(confusion_matrix(y2_test, y_pred_3a), annot=True, fmt = "d", linecolor="k", linewidths=3, ax=ax[0])
 ax[0].set_title("COMBINACIÓN 1",fontsize=14)
 
-sns.heatmap(confusion_matrix(y2_test, y_pred_2b), annot=True, fmt = "d", linecolor="k", linewidths=3, ax=ax[1])
+sns.heatmap(confusion_matrix(y2_test, y_pred_3b), annot=True, fmt = "d", linecolor="k", linewidths=3, ax=ax[1])
 ax[1].set_title("COMBINACIÓN 2",fontsize=14)
 
-sns.heatmap(confusion_matrix(y2_test, y_pred_2c), annot=True, fmt = "d", linecolor="k", linewidths=3, ax=ax[2])
+sns.heatmap(confusion_matrix(y2_test, y_pred_3c), annot=True, fmt = "d", linecolor="k", linewidths=3, ax=ax[2])
 ax[2].set_title("COMBINACIÓN 3",fontsize=14)
 
 plt.show()
@@ -1371,18 +1544,18 @@ plt.show()
 # puesto que la cantidad de muestras catalogadas correctamente parece estar en un termino medio entre las demas
 # combinaciones, es por ello que en el area de las matrices de confusion preferimos la combinacion 1.
 
-y_pred_prob2a = cb_2a.predict_proba(X2_test)[:,1]
-fpr_2a, tpr_2a, thresholds_2a = roc_curve(y2_test, y_pred_prob2a)
-y_pred_prob2b = cb_2b.predict_proba(X2_test)[:,1]
-fpr_2b, tpr_2b, thresholds_2b = roc_curve(y2_test, y_pred_prob2b)
-y_pred_prob2c = cb_2c.predict_proba(X2_test)[:,1]
-fpr_2c, tpr_2c, thresholds_2c = roc_curve(y2_test, y_pred_prob2c)
+y_pred_prob3a = cb_3a.predict_proba(X2_test)[:,1]
+fpr_3a, tpr_3a, thresholds_3a = roc_curve(y2_test, y_pred_prob3a)
+y_pred_prob3b = cb_3b.predict_proba(X2_test)[:,1]
+fpr_3b, tpr_3b, thresholds_3b = roc_curve(y2_test, y_pred_prob3b)
+y_pred_prob3c = cb_3c.predict_proba(X2_test)[:,1]
+fpr_3c, tpr_3c, thresholds_3c = roc_curve(y2_test, y_pred_prob3c)
 
 plt.figure(figsize=(16, 8))
 plt.plot([0, 1], [0, 1], 'k--' )
-plt.plot(fpr_2a, tpr_2a, label='Combinación 1',color = "r")
-plt.plot(fpr_2b, tpr_2b, label='Combinación 2',color = "g")
-plt.plot(fpr_2c, tpr_2c, label='Combinación 3',color = "b")
+plt.plot(fpr_3a, tpr_3a, label='Combinación 1',color = "r")
+plt.plot(fpr_3b, tpr_3b, label='Combinación 2',color = "g")
+plt.plot(fpr_3c, tpr_3c, label='Combinación 3',color = "b")
 plt.xlabel('Ratio de Falsos Positivos')
 plt.ylabel('Ratio de Verdaderos Positivos')
 plt.title('Curva ROC-AUC',fontsize=16)
@@ -1394,9 +1567,9 @@ plt.show()
 # que hay momentos en donde presentan una inclinicacion similar, es por ello que calcularemos el valor de su
 # metrica con el fin de poder tener una mejor interpretabilidad.
 
-print("AUC primera comb.: %.2f%%" % (auc_2a * 100.0))
-print("AUC segunda comb.: %.2f%%" % (auc_2b * 100.0))
-print("AUC tercera comb.: %.2f%%" % (auc_2c * 100.0))
+print("AUC primera comb.: %.2f%%" % (auc_3a * 100.0))
+print("AUC segunda comb.: %.2f%%" % (auc_3b * 100.0))
+print("AUC tercera comb.: %.2f%%" % (auc_3c * 100.0))
 
 # Con esto ultimo, observamos que el mejor valor AUC se lo lleva la combinacion 3, el peor valor la combinacion
 # 2, y en termino medio se encuentra la combinacion 1. No obstante, la diferencia entre estos valores es muy

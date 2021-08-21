@@ -4,42 +4,43 @@
 
 # IDENTIFICACIÓN DEL PROBLEMA
 
-# Uno de los usos mas populares de la ciencia de datos es en el sector del marketing, puesto que es una 
+# Uno de los usos más populares de la ciencia de datos es en el sector del marketing, puesto que es una
 # herramienta muy poderosa que ayuda a las empresas a predecir de cierta forma el resultado de una campaña de
-# marketing en base a experiencias pasadas, y que factores seran fundamentales para su exito o fracaso. A la vez
-# que tambien ayuda a conocer los perfiles de las personas que tienen mas probabilidad de convertirse en futuros
-# clientes con el fin de desarrollar estrategias personalizadas que puedan captar de forma mas efectiva su
-# interes. Conocer de antemano o a posteriori esta informacion es de vital importancia ya que ayuda en gran
-# medida a que la empresa pueda conocer mas acerca del publico al que se tiene que enfocar y que en el futuro
-# se puedan desarrollar campañas de marketing que resulten mas efectivas y eficientes.
-# Entonces, se identifica que la problematica a tratar es el entender los factores que influyen a que una 
-# persona se suscriba o no a un servicio de deposito a plazo fijo ofrecido por un determinado banco y predecir
-# dado una serie de caracteristicas que personas se suscribiran o no a dicho servicio. Para ello, se requiere
-# analizar la ultima campaña de marketing ejecutada por el banco y algunas caracteristicas de sus clientes,
-# para identificar patrones que nos puedan ayudar a comprender y encontrar soluciones para que
-# el banco pueda desarrollar estrategias efectivas que les ayuden a captar el interes de las personas en 
-# suscribirse a sus servicios de deposito a plazo fijo, y en base a esto, construir un modelo predictivo que
-# permita predecir que personas tomaran este servicio o no.
+# marketing en base a experiencias pasadas, y que factores serán fundamentales para su éxito o fracaso. A la
+# vez que también ayuda a conocer los perfiles de las personas que tienen más probabilidad de convertirse en
+# futuros clientes con el fin de desarrollar estrategias personalizadas que puedan captar de forma más efectiva
+# su interés. Conocer de antemano o a posteriori esta información es de vital importancia ya que ayuda en gran
+# medida a que la empresa pueda conocer más acerca del público al que se tiene que enfocar, y que en el futuro
+# se puedan desarrollar campañas de marketing que resulten más efectivas y eficientes. Entonces, se identifica
+# que la problemática a tratar es el entender los factores que influyen a que una persona solicite o no un
+# depósito a plazo fijo ofrecido por un determinado banco y predecir dado una serie de características, que
+# personas solicitarán o no dicho servicio. Para ello, se requiere analizar la última campaña de marketing
+# ejecutada por el banco y algunas características de sus clientes, con el fin de identificar patrones que nos
+# puedan ayudar a comprender y encontrar soluciones para que el banco pueda desarrollar estrategias efectivas
+# que les ayuden a captar el interés de las personas en solicitar este tipo de depósito, y en base a esto,
+# construir un modelo predictivo que permita predecir que personas tomaran este servicio o no.
 
 
-# ¿QUE ES UN DEPOSITO A PLAZO FIJO?
+# ¿QUÉ ES UN DEPÓSITO A PLAZO FIJO?
 
-# Es una inversion que consiste en el deposito de una cantidad determinada de dinero a una institucion
-# financiera por un periodo de tiempo, en donde el cliente no puede retirar el dinero depositado hasta que este
-# periodo de tiempo haya finalizado. La ventaja de este tipo de deposito es que permite ahorrar dinero ganando
-# intereses, por lo cual, muchas personas lo ven como una forma efectiva de generar ingresos pasivos.
+# Es una inversión que consiste en el depósito de una cantidad determinada de dinero a una institución
+# financiera por un periodo de tiempo, en donde el cliente no puede retirar el dinero depositado hasta que
+# este periodo de tiempo haya finalizado. La ventaja de este tipo de depósito es que permite ahorrar dinero
+# ganando intereses, por lo cual, muchas personas lo ven como una forma efectiva de generar ingresos pasivos.
 
 
 # OBJETIVOS
 
-# * Realizar un analisis de datos para encontrar y entender los factores que influyen a que una persona se suscriba
-# a un servicio de deposito a plazo fijo.
-
-# * Construir un modelo de aprendizaje automÃ¡tico para la predicción de futuros clientes.
+# * Realizar análisis de datos para encontrar y entender los factores que influyen a que una persona solicite
+#   o no un depósito a plazo fijo.
+# * Construir un modelo de aprendizaje automático con CatBoost para la predicción de solicitantes de un depósito
+#   a plazo fijo.
+# * Implementar correctamente cada uno de los pasos de la metodología de ciencia de datos en la elaboración de
+#   este proyecto
 
 
 #------------------------------------------------------------------------------------------------------------
-#                                   IMPORTACIÓN DE LIBRERIAS Y CARGA DE DATOS
+#                                   IMPORTACIÓN DE LIBRERÍAS Y CARGA DE DATOS
 #------------------------------------------------------------------------------------------------------------
 
 # Librerías
@@ -61,6 +62,8 @@ import optuna
 from sklearn.metrics import confusion_matrix, f1_score, accuracy_score, classification_report
 from sklearn.metrics import roc_auc_score
 from sklearn.metrics import roc_curve
+import warnings
+warnings.filterwarnings('ignore')
 
 # El conjunto de datos con el que vamos a tratar almacena características de 11162 personas a los que un banco
 # contacto para ofrecerles el servicio de deposito a plazo fijo, e indica si estos al final decidieron adquirir
@@ -78,49 +81,49 @@ data.shape
 
 data.describe()
 
-# Podemos extraer algunos insights simples como que el promedio de edad de los clientes de la empresa rondan
-# en los 41 años. Tambien que el saldo promedio que tienen en su cuenta es de 1528, pero si observamos la
-# desviacion estandar de los datos de esta variable, observamos que tiene un valor 3225, el cual es considerablemente
-# alto, por lo que podemos decir que el saldo de los clientes esta muy distribuido en nuestro conjunto de datos,
-# presentando una alta variacion.
-# Por ultimo, podemos observar que la variable pdays (numero de dias despues del ultimo contacto en la campaña
-# anterior del banco) tiene un valor minimo de -1, lo cual al momento de la interpretabilidad en el analisis de
-# datos puede resultar algo confuso, es por ello que en la seccion del preprocesamiento de datos se procedera
-# a reemplazar este valor por un 0.
+# Podemos extraer algunos insights simples de esta tabla, como que el promedio de edad de los clientes de la
+# empresa ronda en los 41 años. También que el saldo promedio que tienen en su cuenta es de 1528, pero si
+# observamos la desviación estándar de los datos de esta variable, observamos que tiene un valor 3225, el cual
+# es considerablemente alto, por lo que podemos decir que el saldo de los clientes está muy distribuido en
+# nuestro conjunto de datos, presentando una alta variación. Por último, podemos observar que la variable pdays
+# (número de días después del último contacto en la campaña anterior del banco) tiene un valor mínimo de -1,
+# lo cual al momento de la interpretabilidad en el análisis de datos puede resultar algo confuso, es por ello
+# que en la sección del preprocesamiento de datos se procederá a reemplazar este valor por un 0.
 
 #------------------------------------------
-#  ELIMINACIÓN Y CODIFICACIÓN DE VARIABLES
+#  ELIMINACIÓN Y CAMBIO DE TIPO DE VARIABLES
 #------------------------------------------
 
 # Hay que tener en cuenta algo de suma importancia en nuestros datos, y es que la variable "duration" hace
-# referencia al tiempo de duracion en segundos del ultimo contacto que se realizo con la persona antes que
-# decidiera adquirir o no un deposito a plazo fijo, y como naturalmente este valor no se conoce hasta despues
-# de haber realizado la llamada que es cuando ya se sabe la decision de la persona, se procedera a eliminar
-# al momento de construir nuestro modelo predictivo, puesto que estaria otorgando informacion que de por si
-# no se conoce de antemano
+# referencia al tiempo de duración en segundos del último contacto que se realizó con la persona antes que
+# decidiera solicitar o no un depósito a plazo fijo, y como naturalmente este valor no se conoce hasta después
+# de haber realizado la llamada que es cuando ya se sabe la decisión de la persona, se procederá a eliminar al
+# momento de construir nuestro modelo predictivo, puesto que estaría otorgando información que de por si no se
+# conoce de antemano.
 
 data.info()
 
-# Observamos que aparentemente todas nuestras variables de entrada parecen tener cierta relacion con la decision
-# de una persona para adquirir o no el servicio de deposito a plazo fijo, por lo que se decide por el momento no
-# eliminar ninguna de estas de forma injustificada, esta decision puede cambiar mas adelante con algunas tecnicas
-# como la matriz de correlacion.
+# Observamos que aparentemente todas nuestras variables de entrada parecen tener cierta relación con la decisión
+# de una persona en solicitar o no un depósito a plazo fijo, por lo que se decide por el momento no eliminar
+# ninguna de estas variables de forma injustificada.
 
-# Tambien observamos que todas las variables de nuestro conjunto de datos estan correctamente codificadas, por
-# lo tanto, no se requiere realizar conversion alguna.
+# También observamos que todas las variables de nuestro conjunto de datos están correctamente etiquetadas con
+# el tipo de dato que les corresponde, por lo tanto, no se requiere realizar conversión alguna.
 
 
 #------------------------------------------------------------------------------------------------------------
 #                                           PREPROCESAMIENTO DE DATOS
 #------------------------------------------------------------------------------------------------------------
 
-# Como habiamos explicado en la seccion anterior, procederemos a reemplazar los valores iguales a -1 por 0 en
-# la variable pdays
+# Como habíamos explicado en la sección anterior, procederemos a reemplazar los valores iguales a -1 por 0 en
+# la variable pdays.
+
 for i in range(0,data.shape[0]):
-    if data["pdays"][i] == -1:
-        data["pdays"][i] = 0
+    if data["pdays"].iloc[i] == -1:
+        data["pdays"].iloc[i] = 0
  
-# Entonces, si ahora observamos el valor minimo de la variable pdays obtendremos un 0 como resultado
+# Entonces, si ahora observamos el valor mínimo de la variable pdays obtendremos un 0 como resultado en vez de
+# un -1.
 data["pdays"].min()
     
 #----------------------------
@@ -135,12 +138,12 @@ sns.boxplot(ax=ax[1][0], data= data[["duration"]], palette="Pastel1")
 sns.boxplot(ax=ax[1][1], data= data[["pdays"]], palette="Pastel1")
 plt.show()
 
-# Con el diagrama de cajas observamos que tenemos presencia de outliers en todas nuestras variables numericas
-# excepto en la variables "day".
+# Con el diagrama de cajas observamos que tenemos presencia de outliers en todas nuestras variables numéricas
+# excepto en la variable "day".
 
-# A continuacion, visualizaremos el porcentaje de outliers con respecto al total en cada una de nuestras 
-# variables para poder considerar si debemos tomar la decision de eliminar alguna de estas variables por su
-# alta presencia de valores atipicos
+# A continuación, visualizaremos el porcentaje de outliers con respecto al total en cada una de nuestras
+# variables para poder considerar si debemos tomar la decisión de eliminar alguna de estas variables por su
+# alta presencia de valores atípicos.
 
 Q1 = data.quantile(0.25)
 Q3 = data.quantile(0.75)
@@ -148,110 +151,125 @@ IQR = Q3 - Q1
 
 ( (data < (Q1 - 1.5 * IQR)) | (data > (Q3 + 1.5 * IQR)) ).sum() / data.shape[0] * 100
 
-# Los resutados nos arrojan que la variable "pdays" tiene un 24% de presencia de outliers respecto al total de
-# filas, lo cual siguiendo la buena practica de eliminar aquellas variables que superen un umbral del 15% de
-# valores atipicos, procederemos a eliminar esta variable ya que puede inferir de forma negativa en el analisis
-# y la prediccion del futuro modelo de clasificacion que se construira. Otro dato a recalcar, es que esta
-# variable es la misma que presentaba valores iguales a -1, los cuales reemplazamos con 0, donde quiza los
-# valores etiquetados como -1 se debieron a una corrupcion en los datos, con lo cual tenemos un motivo mas para
-# eliminar esta variable.
+# Los resultados nos arrojan que la variable "pdays" tiene un 24% de presencia de outliers respecto al total de
+# filas, lo cual siguiendo la buena práctica de eliminar aquellas variables que superen un umbral del 15% de
+# valores atípicos, procederemos a eliminar esta variable ya que puede inferir de forma negativa en el análisis
+# y la predicción del futuro modelo de clasificación que se construirá. Otro dato a tomar en cuenta, es que
+# esta variable es la misma que presentaba valores iguales a -1, los cuales reemplazamos con 0, donde quizá los
+# valores etiquetados como -1 se debieron a una corrupción en los datos, con lo cual tenemos un motivo más
+# para eliminar esta variable.
 
 data = data.drop(["pdays"], axis=1)
 
 # -- AGE --
 
 fig, ax = plt.subplots(1, 2, figsize=(14,7))
+plt.subplots_adjust(wspace=0.3)
 sns.boxplot(ax=ax[0], data= data[["age"]], palette="Set3")
 sns.distplot(data["age"], ax=ax[1])
+plt.show()
 
-# De los siguientes graficos podemos observar que los datos que son catalogados como atipicos segun el rango
-# intercuartilico son personas que superan los 75 años de edad sin llegar a pasar los 95 años. Este rango de
-# edad no es ningun error o corrupcion en los datos, ya que la mayoria de personas con una calidad de vida
-# adecuada podrian alcanzar este rango, por lo tanto, tenemos tres opciones para tratarlos.
-# Eliminar las filas que contengan estas edades debido a que su presencia es tan solo del 1.5% del total
-# Imputarlos haciendo uso de un algoritmo predictivo
-# Todos estos metodos resultarian aceptables, pero en este caso optaremos por imputarlos por un valor
-# aproximado que refleje la misma conducta que el valor atipico, mas que todo para no perder informacion. De
-# igual forma, al momento del entrenamiento y la eleccion del mejor modelo de clasificacion, se comparara el
-# rendimiento de un modelo libre de outliers con uno con outliers con el fin de observar si nuestra decision
+# De los siguientes gráficos podemos observar que los datos que son catalogados como atípicos según el rango
+# intercuartílico son personas que superan los 75 años de edad sin llegar a pasar los 95 años. Este rango de
+# edad no es ningún error o corrupción en los datos, ya que la mayoría de personas con una calidad de vida
+# adecuada podrían alcanzar este rango, por lo tanto, tenemos dos opciones para tratarlos:
+    
+# * Eliminar las filas que contengan estas edades debido a que su presencia es tan solo del 1.5% del total.
+# * Imputarlos haciendo uso de un algoritmo predictivo.
+
+# Todos estos métodos resultan aceptables, pero en este caso optaremos por imputarlos por un valor aproximado a
+# lo "normal" que refleje la misma conducta que el valor atípico, más que todo para no perder información. De
+# igual forma, al momento del entrenamiento y la elección del mejor modelo de clasificación, se comparará el
+# rendimiento de un modelo libre de outliers con uno con outliers con el fin de observar si nuestra decisión
 # fue acertada.
+
 
 # -- CAMPAIGN --
 
 fig, ax = plt.subplots(1, 2, figsize=(14,7))
+plt.subplots_adjust(wspace=0.3)
 sns.boxplot(ax=ax[0], data= data[["campaign"]], palette="Set3")
 sns.distplot(data["campaign"], ax=ax[1])
+plt.show()
 
-# Con respecto a esta variable, observamos que la inmensa mayoria de nuestros datos tienen un valor entre 1 y
-# 5, mientras que los datos atipicos adquieren valores superiores a este rango. Evidentemente este es un 
-# comportamiento inusual ya que segun nuestros datos, comunmente solo se realizan entre 1 y 5 contactos con el
-# cliente antes de que este tome una decision final, por ende, numeros de contactos iguales a 10, 20, 30 e 
+# Con respecto a esta variable, observamos que la inmensa mayoría de nuestros datos tienen un valor entre 1 y 5,
+# mientras que los datos atípicos adquieren valores superiores a este rango. Evidentemente este es un
+# comportamiento inusual ya que, según nuestros datos, comúnmente solo se realizan entre 1 y 5 contactos con el
+# cliente antes de que este tome una decisión final, por ende, números de contactos iguales a 10, 20, 30 e
 # incluso mayores a 40 son demasiado extraños de ver. Por ende, procederemos a imputar estos valores por
-# estimaciones que se aproximen a un valor comun.
+# estimaciones que se aproximen a un valor común.
 
 # -- PREVIOUS --
 
 fig, ax = plt.subplots(1, 2, figsize=(14,7))
+plt.subplots_adjust(wspace=0.3)
 sns.boxplot(ax=ax[0], data= data[["previous"]], palette="Set3")
 sns.distplot(data["previous"], ax=ax[1])
+plt.show()
 
-# Al igual que en la variable "campaign", "previous" aparte de tener una difinicion similar (numero de contactos
-# con el cliente en la campaña anterior) con "campaing", este tambien presenta un comportamiento equivalente,
-# en donde se observa que los valores comunes estan en un rango entre 0 y 3, y que los datos considerados como
-# atipicos toman valores superiores a este rango, llegando incluso a ser excesivos. Es por ello que se tomara
-# la misma decision de imputarlos al igual que "campaign".
+# Al igual que en la variable "campaign", "previous" aparte de tener una definición similar (número de contactos
+# con el cliente en la campaña anterior), este también presenta un comportamiento similar, en donde se observa
+# que los valores comunes están en un rango entre 0 y 3, y que los datos considerados como atípicos toman
+# valores superiores a este rango, llegando incluso a ser excesivos. Es por ello que se tomara la misma
+# decisión de imputarlos al igual que "campaign".
 
 # -- BALANCE --
 
 fig, ax = plt.subplots(1, 2, figsize=(14,7))
+plt.subplots_adjust(wspace=0.3)
 sns.boxplot(ax=ax[0], data= data[["balance"]], palette="Set3")
 sns.distplot(data["balance"], ax=ax[1])
+plt.show()
 
-# Un comportamiento similar a las anteriores observamos en esta variable, donde nuevamente tenemos un sesgo
-# por la derecha en donde los datos comunes adquieren valores entre -300 y 4000, y los que son atipicos llegan
-# a superar facilmente este umbral, aunque resulta mas comun que lo superen en forma positiva que en forma 
-# negativa, lo cual podemos deducir que en terminos de valores atipicos, es mas comun encontrar datos anormalmente
-# altos que datos anormalmente bajos. Debido a que el procentaje de datos atipicos para esta variable es del
-# 9.4%, el cual no es un valor ni muy grande ni muy pequeño, no conviene eliminarlos, es por ello que los
-# imputaremos por un nuevo valor aproximado que entre en un rango mas comun.
+# Un comportamiento similar a las anteriores gráficas observamos en esta variable, donde nuevamente tenemos un
+# sesgo por la derecha en donde los datos comunes adquieren valores entre -300 y 4000, y los que son atípicos
+# llegan a superar fácilmente este umbral, aunque resulta más común que lo superen en forma positiva que en
+# forma negativa, lo cual podemos deducir que, en términos de valores atípicos, es más común encontrar datos
+# anormalmente altos que datos anormalmente bajos. Debido a que el porcentaje de datos atípicos para esta
+# variable es del 9.4%, el cual no es un valor ni muy grande ni muy pequeño, no conviene eliminarlos, es por
+# ello que los imputaremos por un nuevo valor aproximado que entre en un rango más común.
 
 # -- DURATION --
 
 fig, ax = plt.subplots(1, 2, figsize=(14,7))
+plt.subplots_adjust(wspace=0.3)
 sns.boxplot(ax=ax[0], data= data[["duration"]], palette="Set3")
 sns.distplot(data["duration"], ax=ax[1])
+plt.show()
 
-# Esta variable tambien presenta un sesgo notorio por la derecha al igual que las variables anteriores, con la
-# diferencia que su distribucion parece ser mas equitativa respecto a las demas, aqui podemos apreciar que 
-# los valores comunes estan en un rango entre 0 y 1000 segundos (16 minutos aprox.) y que los que son considerados
-# atipicos superan facilmente este rango, llegando incluso a ser superiores a los 3000 segundos (50 minutos).
+# Esta variable también presenta un sesgo notorio por la derecha al igual que las variables anteriores, con la
+# diferencia que su distribución parece ser más equitativa respecto a las demás, aquí podemos apreciar que los
+# valores comunes están en un rango entre 0 y 1000 segundos (16 minutos aprox.) y que los que son considerados
+# atípicos superan fácilmente este rango, llegando incluso a ser superiores a los 3000 segundos (50 minutos).
 # Observar que una llamada entre un empleado del banco y un cliente supere los 30 minutos es un comportamiento
 # inusual y que no se acostumbra a tener, es por ello que estos datos deben ser tratados, y para este caso
-# haremos uso de la imputacion iterativa aplicando bosques aleatorios para reemplazar dichos valores
-# por unos que se acerquen a un comportamiento comun de observar.
+# haremos uso de la imputación iterativa aplicando bosques aleatorios para reemplazar dichos valores por unos
+# que se acerquen a un comportamiento común de observar.
 
 
 #----------------------------
 # IMPUTACIÓN DE OUTLIERS
 #----------------------------
 
-# Crearemos una copia del conjunto de datos original con el fin de mas adelante poder comparar el rendimiento
-# de nuestro modelo predictivo en ambos conjuntos
+# Crearemos una copia del conjunto de datos original con el fin de que mas adelante podamos comparar el
+# rendimiento de nuestro modelo predictivo en ambos conjuntos (datos con outliers y sin outliers).
 
 data2 = data.copy()
 
-# El primer paso para realizar la imputacion sera convertir todos los valores atipicos que se hayan detectado
-# mediante el rango intercuartilico por NaN, ya que la funcion que utilizaremos para la imputacion trabaja con
+# El primer paso para realizar la imputación será convertir todos los valores atípicos que se hayan detectado
+# mediante el rango intercuartílico por NaN, ya que la función que utilizaremos para la imputación trabaja con
 # este tipo de datos.
 
 outliers = (data2 < (Q1 - 1.5 * IQR)) | (data2 > (Q3 + 1.5 * IQR))
 data2[outliers] = np.nan
 
-# Ahora tenemos que aplicar una codificacion para nuestras variables categoricas, debido a que usaremos bosques
-# aleatorios, bastara con aplicar un label encoder
+# Ahora tenemos que aplicar una codificación para nuestras variables categóricas, debido a que usaremos bosques
+# aleatorios como medio de imputación, bastara con aplicar un label encoder.
 
+# Nombres de nuestras variables categóricas
 cols = ["job", "marital", "education", "default", "housing", "loan", "contact", "month", "poutcome", "deposit"]
 
+# Diccionario para almacenar la codificación realizada en cada variable (Útil para después revertir la transformación)
 dic = {}
 
 for col in cols:
@@ -261,6 +279,7 @@ for col in cols:
 # El siguiente paso ahora es dividir nuestros datos en conjuntos de entrenamiento y prueba con el fin de evitar
 # la fuga de datos.
 
+# Guardamos los nombres de las columnas de nuestro Dataset (Útil para después concatenar estos conjuntos en uno solo)
 nom_cols = data2.columns.values
 
 X = data2.iloc[: , :-1].values
@@ -274,9 +293,9 @@ imputer = IterativeImputer(estimator=RandomForestRegressor(random_state=21), ran
 X_train = imputer.fit_transform(X_train)
 X_test = imputer.transform(X_test)
 
-# Para visualizar el resultado de nuestra imputacion de forma comoda y grafica sera necesario concatenar todos
-# los subconjuntos que hemos creado en uno solo como teniamos inicialmente y revertir la codificacion de
-# nuestras variables categoricas
+# Para visualizar el resultado de nuestra imputación de forma cómoda y gráfica, será necesario concatenar todos
+# los subconjuntos que hemos creado en uno solo como teníamos inicialmente y revertir la codificación de
+# nuestras variables categóricas.
 
 X_train = pd.DataFrame(X_train)
 X_test = pd.DataFrame(X_test)
@@ -288,8 +307,9 @@ y = pd.concat([y_train, y_test], axis=0)
 
 data2 = pd.concat([X, y], axis=1)
 
-data2.columns = nom_cols
+data2.columns = nom_cols  # Se les introduce los nombres de las columnas con la variable anteriormente creada
 
+# Se invierte la codificación
 for col in cols:
     data2[col] = dic[col].inverse_transform(data2[col].astype(int))
 
@@ -301,16 +321,17 @@ for col in cols:
 for col in ["age", "day", "campaign", "previous", "balance", "duration"]:
     data2[col] = data2[col].round()
 
-# Ahora si podemos graficar para observar el cambio en nuestros datos despues de la imputacion
+# Ahora si podemos graficar para observar el cambio en nuestros datos después de la imputación.
 
-fig, ax = plt.subplots(1, 3, figsize=(14,7))
+fig, ax = plt.subplots(1, 3, figsize=(16,7))
+plt.subplots_adjust(wspace=0.3)
 sns.boxplot(ax=ax[0], data= data2[["age", "day", "campaign", "previous"]], palette="Set3")
 sns.boxplot(ax=ax[1], data= data2[["balance"]], palette="Pastel1")
 sns.boxplot(ax=ax[2], data= data2[["duration"]], palette="Pastel1")
 plt.show()
 
-# Del grafico podemos observar que que todas las variables a excepcion de "balance" y "duration" estan libres
-# de outliers.
+# Del grafico podemos observar que todas las variables a excepción de "balance" y "duration" están libres de
+# outliers.
 
 fig, ax = plt.subplots(1, 2, figsize=(14,7))
 sns.boxplot(ax=ax[0], data= data2[["balance"]], palette="Set3")
@@ -320,9 +341,9 @@ fig, ax = plt.subplots(1, 2, figsize=(14,7))
 sns.boxplot(ax=ax[0], data= data2[["duration"]], palette="Set3")
 sns.distplot(data2["duration"], ax=ax[1])
 
-# Analizando las variables que aun tienen presencia de valores atipicos, se ve que la varianza en la distribucion
-# de estos valores ya no es tan extrema como teniamos inicialmente, si no que ahora se distribuyen en un rango
-# menor a 1000 unidades, incluso pudiendose acercar a una distribucion normal.
+# Analizando las variables que aún tienen presencia de valores atípicos, se ve que la varianza en la distribución
+# de estos valores ya no es tan extrema como teníamos inicialmente, si no que ahora se distribuyen en un rango
+# menor a 1000 unidades, incluso pudiéndose acercar a una distribución normal.
 
 Q1 = data2.quantile(0.25)
 Q3 = data2.quantile(0.75)
@@ -330,10 +351,10 @@ IQR = Q3 - Q1
 
 ( (data2 < (Q1 - 1.5 * IQR)) | (data2 > (Q3 + 1.5 * IQR)) ).sum() / data2.shape[0] * 100
 
-# A la vez que tambien observamos que estos datos atipicos solo constituyen el 5.6% y 4.1% respectivamente 
-# del total, lo cual es una cifra moderadamente baja. Entonces podemos tomar dos decisiones, elimnarlos o
-# conservarlos como parte de nuestros datos. En esta ocacion, eligire conservarlos ya que pueden contener
-# informacion util para el analisis y para el modelo de clasificacion, ademas que su presencia es relativamente
+# A la vez que también observamos que estos datos atípicos solo constituyen el 5.6% y 4.1% respectivamente del
+# total, lo cual es una cifra moderadamente baja. Entonces podemos tomar dos decisiones, eliminarlos o
+# conservarlos como parte de nuestros datos. En esta ocasión, elegiré conservarlos ya que pueden contener
+# información útil para el análisis y para el modelo de clasificación, además que su presencia es relativamente
 # baja con respecto del total y su distancia de los extremos no es tan alarmante ni exagerada.
 
 
@@ -344,7 +365,7 @@ IQR = Q3 - Q1
 # Observamos cuantos valores faltantes hay en nuestro conjunto de datos
 data2.isnull().sum().sum()
 
-# Debido a que no hay presencia de valores faltantes o nulos, no sera necesario tomar acciones al respecto
+# Debido a que no hay presencia de valores faltantes o nulos, no será necesario tomar acciones al respecto
 
 
 
@@ -376,6 +397,10 @@ data2.isnull().sum().sum()
 # H15: ¿Los clientes que solicitaron un deposito a plazo fijo en la campaña anterior son mas propensos a solicitar
 # el mismo servicio en la campaña actual?
 
+
+#--------------------
+# ANALISIS UNIVARIADO
+#--------------------
 
 # Para comenzar, visualizaremos la distribución de los datos respecto a cada uno de los tres conjuntos de
 # variables que se han identificado: Variables de información del cliente - Variables de informacion bancaria
@@ -519,6 +544,10 @@ plt.show()
 # hipótesis que inicialmente habíamos planteado, esto lo lograremos mediante un análisis bivariado de nuestras
 # variables de entrada con nuestra variable de salida.
 
+
+#-------------------
+# ANALISIS BIVARIADO
+#-------------------
 
 # VARIABLES DE INFORMACIÓN DEL CLIENTE VS "deposit"
 
@@ -809,7 +838,9 @@ plt.show()
 # Cramer para las categoricas.
 
 
+#-----------------------
 # CORRELACION DE PEARSON
+#-----------------------
 
 data_corr = data2.copy()
 
@@ -829,7 +860,9 @@ ax = sns.heatmap(corr, mask=mask, xticklabels=corr.columns, yticklabels=corr.col
 # solicitar el deposito en la campaña actual
 
 
+#------------
 # V DE CRAMER
+#------------
 
 data_corr = data2.copy()
 
@@ -1484,22 +1517,22 @@ y_pred_3c = cb_3c.predict(X2_test)
 # COMPARACIÓN DE RENDIMIENTO ENTRE COMBINACIONES
 
 # Para la primera combinación
-f1_3a = f1_score(y2_test, y_pred_2a)
-acc_3a = accuracy_score(y2_test, y_pred_2a)
-auc_3a = roc_auc_score(y2_test, y_pred_2a)
-report_3a = classification_report(y2_test,y_pred_2a)
+f1_3a = f1_score(y2_test, y_pred_3a)
+acc_3a = accuracy_score(y2_test, y_pred_3a)
+auc_3a = roc_auc_score(y2_test, y_pred_3a)
+report_3a = classification_report(y2_test,y_pred_3a)
 
 # Para la segunda combinación
-f1_3b = f1_score(y2_test, y_pred_2b)
-acc_3b = accuracy_score(y2_test, y_pred_2b)
-auc_3b = roc_auc_score(y2_test, y_pred_2b)
-report_3b = classification_report(y2_test,y_pred_2b)
+f1_3b = f1_score(y2_test, y_pred_3b)
+acc_3b = accuracy_score(y2_test, y_pred_3b)
+auc_3b = roc_auc_score(y2_test, y_pred_3b)
+report_3b = classification_report(y2_test,y_pred_3b)
 
 # Para la tercera combinación
-f1_3c = f1_score(y2_test, y_pred_2c)
-acc_3c = accuracy_score(y2_test, y_pred_2c)
-auc_3c = roc_auc_score(y2_test, y_pred_2c)
-report_3c = classification_report(y2_test,y_pred_2c)
+f1_3c = f1_score(y2_test, y_pred_3c)
+acc_3c = accuracy_score(y2_test, y_pred_3c)
+auc_3c = roc_auc_score(y2_test, y_pred_3c)
+report_3c = classification_report(y2_test,y_pred_3c)
 
 
 print("F1 primera comb.: %.2f%%" % (f1_3a * 100.0))
@@ -1580,5 +1613,264 @@ print("AUC tercera comb.: %.2f%%" % (auc_3c * 100.0))
 # aquellas muestras que son positivas (deposito a plazo fijo) y negativas (no deposito a plazo fijo), por lo 
 # tanto, utilizaremos el modelo construido con esta combinacion como referente del conjunto de "Hiperparametros
 # para datos sin outliers y sin codificacion manual".
+
+
+#------------------------------
+# HIPERPARÁMETROS PARA DATOS SIN OUTLIERS Y CON CODIFICACION MANUAL
+
+def objective(trial):   
+
+    params = {"iterations": trial.suggest_int("iterations",300,1200,100),
+              "learning_rate": trial.suggest_float("learning_rate", 0.01, 0.3),
+              "depth": trial.suggest_int("depth", 4, 12, 1),
+              "l2_leaf_reg": trial.suggest_float("l2_leaf_reg", 0, 10),
+              "random_strength":trial.suggest_int("random_strength", 0, 40, 1),
+              "bagging_temperature": trial.suggest_int("bagging_temperature", 0, 2, 1),
+              'max_ctr_complexity': trial.suggest_int('max_ctr_complexity', 0, 10),
+              "auto_class_weights": "Balanced",
+              "loss_function": "Logloss",
+              "eval_metric": "AUC",
+              "task_type": "GPU",
+              "od_type" : "Iter",  # Parametros relacionados con early stop
+              "od_wait" : 30,
+              "use_best_model": True,
+              "random_seed": 42}
+    
+    train_pool = Pool(X2_train_cod, y2_train_cod)
+    test_pool = Pool(X2_test_cod, y2_test_cod)
+    
+    # Inicialización y entrenamiento del modelo
+    model = CatBoostClassifier(**params) 
+    model.fit(train_pool, eval_set=test_pool, verbose=True)
+    
+    # Evaluación y obtención de métricas
+    preds = model.predict(X2_test_cod)
+    metric = accuracy_score(y2_test_cod, preds)
+    
+    return metric
+
+
+study = optuna.create_study(direction='maximize')
+study.optimize(objective, n_trials=70)
+
+print('Best trial: score {}, params {}'.format(study.best_trial.value, study.best_trial.params))
+best_4 = study.trials_dataframe()
+
+# Se ejecutó la función tres veces de forma independiente, y posterior a ello, se registró la mejor combinación
+# de parámetros que arrojó cada ejecución, siendo estas las siguientes:
+
+# 75.24% | iterarions=600, learning_rate=0.0856975, depth=9, l2_leaf_reg=7.42101, random_strength=0, bagging_temperature=0, max_ctr_complexity=10
+# 75.18% | iterarions=1200, learning_rate=0.0274008, depth=10, l2_leaf_reg=7.42817, random_strength=0, bagging_temperature=1, max_ctr_complexity=1
+# 75.15% | iterarions=700, learning_rate=0.0854912, depth=10, l2_leaf_reg=5.43813, random_strength=0, bagging_temperature=0, max_ctr_complexity=10
+
+# Procederemos a entrenar un nuevo modelo XGBoost en base a las tres combinaciones de hiperparámetros
+# obtenidas para determinar cual de ellas presenta mejores resultados al clasificar nuestros datos
+
+train_pool = Pool(X2_train_cod, y2_train_cod)
+test_pool = Pool(X2_test_cod, y2_test_cod)
+
+# Para la primera combinación
+cb_4a = CatBoostClassifier(iterations=600, learning_rate=0.0856975, depth=9, l2_leaf_reg=7.42101, random_strength=0,
+                            bagging_temperature=0, max_ctr_complexity=10, auto_class_weights= "Balanced", loss_function = "Logloss",
+                            eval_metric = "AUC", task_type= "GPU", use_best_model= True, random_seed=42)
+
+cb_4a.fit(train_pool, eval_set = test_pool)
+y_pred_4a = cb_4a.predict(X2_test_cod)
+
+# Para la segunda combinación #Utilizando random seed
+cb_4b = CatBoostClassifier(iterations=1200, learning_rate=0.0274008, depth=10, l2_leaf_reg=7.42817, random_strength=0,
+                            bagging_temperature=1,  max_ctr_complexity=1, auto_class_weights= "Balanced", loss_function = "Logloss",
+                            eval_metric = "AUC", task_type= "GPU", use_best_model= True, random_seed=42)
+
+cb_4b.fit(train_pool, eval_set = test_pool)
+y_pred_4b = cb_4b.predict(X2_test_cod)
+
+# Para la tercera combinación
+cb_4c = CatBoostClassifier(iterations=700, learning_rate=0.0854912, depth=10, l2_leaf_reg=5.43813, random_strength=0,
+                            bagging_temperature=0, max_ctr_complexity=10, auto_class_weights= "Balanced", loss_function = "Logloss",
+                            eval_metric = "AUC", task_type= "GPU", use_best_model= True, random_seed=42)
+
+cb_4c.fit(train_pool, eval_set = test_pool)
+y_pred_4c = cb_4c.predict(X2_test_cod)
+
+
+# COMPARACIÓN DE RENDIMIENTO ENTRE COMBINACIONES
+
+# Para la primera combinación
+f1_4a = f1_score(y2_test_cod, y_pred_4a)
+acc_4a = accuracy_score(y2_test_cod, y_pred_4a)
+auc_4a = roc_auc_score(y2_test_cod, y_pred_4a)
+report_4a = classification_report(y2_test_cod,y_pred_4a)
+
+# Para la segunda combinación
+f1_4b = f1_score(y2_test_cod, y_pred_4b)
+acc_4b = accuracy_score(y2_test_cod, y_pred_4b)
+auc_4b = roc_auc_score(y2_test_cod, y_pred_4b)
+report_4b = classification_report(y2_test_cod,y_pred_4b)
+
+# Para la tercera combinación
+f1_4c = f1_score(y2_test_cod, y_pred_4c)
+acc_4c = accuracy_score(y2_test_cod, y_pred_4c)
+auc_4c = roc_auc_score(y2_test_cod, y_pred_4c)
+report_4c = classification_report(y2_test_cod,y_pred_4c)
+
+
+print("F1 primera comb.: %.2f%%" % (f1_4a * 100.0))
+print("Accuracy primera comb.: %.2f%%" % (acc_4a * 100.0))
+print("-------------------------------")
+print("F1 segunda comb.: %.2f%%" % (f1_4b * 100.0))
+print("Accuracy segunda comb.: %.2f%%" % (acc_4b * 100.0))
+print("-------------------------------")
+print("F1 tercera comb.: %.2f%%" % (f1_4c * 100.0))
+print("Accuracy tercera comb.: %.2f%%" % (acc_4c * 100.0))
+
+print(report_4a)
+print("-------------------------------------------------")
+print(report_4b)
+print("-------------------------------------------------")
+print(report_4c)
+
+# Respecto a esta combinacion de metricas se observa claramente que la tercera combinacion es la que mejores
+# resultados presenta, aunque la diferencia de sus puntajes comparados con el de las demas combinaciones sea
+# relativamente pequeña. Tambien podemos observar que los puntajes de la primera combinacion son los que menores
+# valores presentaron.
+
+fig, ax = plt.subplots(1, 3, figsize=(20, 5))
+
+sns.heatmap(confusion_matrix(y2_test_cod, y_pred_4a), annot=True, fmt = "d", linecolor="k", linewidths=3, ax=ax[0])
+ax[0].set_title("COMBINACIÓN 1",fontsize=14)
+
+sns.heatmap(confusion_matrix(y2_test_cod, y_pred_4b), annot=True, fmt = "d", linecolor="k", linewidths=3, ax=ax[1])
+ax[1].set_title("COMBINACIÓN 2",fontsize=14)
+
+sns.heatmap(confusion_matrix(y2_test_cod, y_pred_4c), annot=True, fmt = "d", linecolor="k", linewidths=3, ax=ax[2])
+ax[2].set_title("COMBINACIÓN 3",fontsize=14)
+
+plt.show()
+
+# Las matrices de confusion dejan en clara evidencia la superioridad predictora del modelo cosntruido con la
+# tercera combinacion, ya que este presenta un mejor ratio en la clasificacion de muestras como VP y FP en 
+# comparacion con las demas. Estas matrices tambien nos permiten ir concluyendo que la primera combinacion tiene
+# un rendimiento predictivo inferior en comparacion con las demas, ya que presenta peores resultados de clasificacion
+
+y_pred_prob4a = cb_4a.predict_proba(X2_test_cod)[:,1]
+fpr_4a, tpr_4a, thresholds_4a = roc_curve(y2_test_cod, y_pred_prob4a)
+y_pred_prob4b = cb_4b.predict_proba(X2_test_cod)[:,1]
+fpr_4b, tpr_4b, thresholds_4b = roc_curve(y2_test_cod, y_pred_prob4b)
+y_pred_prob4c = cb_4c.predict_proba(X2_test_cod)[:,1]
+fpr_4c, tpr_4c, thresholds_4c = roc_curve(y2_test_cod, y_pred_prob4c)
+
+plt.figure(figsize=(16, 8))
+plt.plot([0, 1], [0, 1], 'k--' )
+plt.plot(fpr_4a, tpr_4a, label='Combinación 1',color = "r")
+plt.plot(fpr_4b, tpr_4b, label='Combinación 2',color = "g")
+plt.plot(fpr_4c, tpr_4c, label='Combinación 3',color = "b")
+plt.xlabel('Ratio de Falsos Positivos')
+plt.ylabel('Ratio de Verdaderos Positivos')
+plt.title('Curva ROC-AUC',fontsize=16)
+plt.legend()
+plt.show()
+
+# Con respecto a la curva ROC-AUC, no podemos identificar claramente que combinacion es superior a las demas, ya
+# que existen algunos trazos en los que una combinacion es inferior a otra, y otros en los que es superior a las
+# demas, es por ello que calcularemos el valor de su metrica con el fin de poder tener una mejor interpretabilidad
+
+print("AUC primera comb.: %.2f%%" % (auc_4a * 100.0))
+print("AUC segunda comb.: %.2f%%" % (auc_4b * 100.0))
+print("AUC tercera comb.: %.2f%%" % (auc_4c * 100.0))
+
+# Estos resultados indican que la tercera combinacion posee un mejor ratio en la correcta prediccion de nuestros
+# datos, y que como ya sospechabamos anteriormente, la primera combinacion tiene el peor rendimiento predictivo en 
+# comparacion con las demas. Es por ello que uniendo estos resultados con el de las demas metricas anteriormente
+# vistas, facilmente podemos concluir que el modelo construido con la tercera combinacion es el que mejor clasifica
+# nuestros datos, por lo tanto, sera usado como referente del conjunto de "Hiperparametros para datos sin outliers
+# y con codificacion manual".
+
+
+#-----------------------------
+# ELECCIÓN DEL MEJOR MODELO
+#-----------------------------
+
+# Después de haber elegido las cuatro mejores combinaciones en base al entrenamiento de conjuntos con diferentes
+# tipos de transformación y codificacion, procederemos a compararlos entre sí para quedarnos con un modelo definitivo
+# el cual mejores resultados de evaluación tenga.
+
+print("F1 Primer conjunto: %.2f%%" % (f1_1b * 100.0))
+print("Accuracy Primer conjunto: %.2f%%" % (acc_1b * 100.0))
+print("-------------------------------")
+print("F1 Segundo conjunto: %.2f%%" % (f1_2c * 100.0))
+print("Accuracy Segundo conjunto: %.2f%%" % (acc_2c * 100.0))
+print("-------------------------------")
+print("F1 Tercer conjunto: %.2f%%" % (f1_3b * 100.0))
+print("Accuracy Tercer conjunto: %.2f%%" % (acc_3b * 100.0))
+print("-------------------------------")
+print("F1 Cuarto conjunto: %.2f%%" % (f1_4c * 100.0))
+print("Accuracy Cuarto conjunto: %.2f%%" % (acc_4c * 100.0))
+
+print(report_1b)
+print("-------------------------------------------------")
+print(report_2c)
+print("-------------------------------------------------")
+print(report_3b)
+print("-------------------------------------------------")
+print(report_4c)
+
+# De principio estamos observando que el modelo del primer conjunto (Datos rebalanceados por XGBoost) tiene
+# un rendimiento superior en cuanto a puntaje F1 se refiere, y en cuanto a precisión tiene un puntaje similar
+# con el modelo de la combinación 2 (Datos rebalanceados por SMOTE-NC).
+
+fig, ax = plt.subplots(2, 2, figsize=(20, 5))
+
+sns.heatmap(confusion_matrix(y_test, y_pred_1b), annot=True, fmt = "d", linecolor="k", linewidths=3, ax=ax[0,0])
+ax[0][0].set_title("PRIMER CONJUNTO",fontsize=14)
+
+sns.heatmap(confusion_matrix(y_test_cod, y_pred_2c), annot=True, fmt = "d", linecolor="k", linewidths=3, ax=ax[0,1])
+ax[0][1].set_title("SEGUNDO CONJUNTO",fontsize=14)
+
+sns.heatmap(confusion_matrix(y2_test, y_pred_3b), annot=True, fmt = "d", linecolor="k", linewidths=3, ax=ax[1,0])
+ax[1][0].set_title("TERCER CONJUNTO",fontsize=14)
+
+sns.heatmap(confusion_matrix(y2_test_cod, y_pred_4c), annot=True, fmt = "d", linecolor="k", linewidths=3, ax=ax[1,1])
+ax[1][1].set_title("CUARTO CONJUNTO",fontsize=14)
+
+plt.show()
+
+# De nuestras matrices de confusión observamos que el modelo del primer conjunto tiene ligeramente una mayor
+# sensibilidad en comparación con el del segundo conjunto, y que el modelo del tercer conjunto tiene un bajo
+# rendimiento en la identificación de verdaderos positivos.
+
+plt.plot([0, 1], [0, 1], 'k--' )
+plt.plot(fpr_1b, tpr_1b, label='Primer conjunto',color = "r")
+plt.plot(fpr_2c, tpr_2c, label='Segundo conjunto',color = "g")
+plt.plot(fpr_3b, tpr_3b, label='Tercer conjunto',color = "b")
+plt.plot(fpr_4c, tpr_4c, label='Cuarto conjunto',color = "y")
+plt.xlabel('Ratio de Falsos Positivos')
+plt.ylabel('Ratio de Verdaderos Positivos')
+plt.title('Curva ROC-AUC',fontsize=16)
+plt.legend()
+plt.show()
+
+# El gráfico de la curva ROC-AUC nos da un resultado muy interesante, ya que podemos ver la superioridad del
+# modelo del primer conjunto en cuanto a la predicción correcta de verdaderos positivos y falsos positivos en
+# comparación con los demás modelos, por lo tanto, ya se puede deducir cual es la combinación de parámetros
+# que mejor se ajustan a nuestros datos.
+
+print("AUC Primer conjunto: %.2f%%" % (auc_1b * 100.0))
+print("AUC Segundo conjunto: %.2f%%" % (auc_2c * 100.0))
+print("AUC Tercer conjunto: %.2f%%" % (auc_3b * 100.0))
+print("AUC Cuarto conjunto: %.2f%%" % (auc_4c * 100.0))
+
+# Finalmente, con estos puntajes calculados, llegamos a la decision de utilizar el mejor modelo proveniente
+# del primer conjunto (Datos rebalanceados por XGBoost), debido a que a lo largo de todo el proceso de
+# selección, mostró superioridad frente a los demás modelos.
+
+# Combinación de parámetros del modelo final:
+# tree_method="gpu_hist", objective="binary:logistic", eval_metric="auc", use_label_encoder=False,
+# n_estimators=400, max_depth=18, learning_rate=0.0013, subsample=0.2, colsample_bytree=0.9, seed=21
+
+# Guardado del modelo
+joblib.dump(xgb_1c, "XGboost_Model_Churn")
+
+
 
 

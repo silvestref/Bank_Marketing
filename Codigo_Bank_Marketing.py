@@ -62,6 +62,8 @@ import optuna
 from sklearn.metrics import confusion_matrix, f1_score, accuracy_score, classification_report
 from sklearn.metrics import roc_auc_score
 from sklearn.metrics import roc_curve
+import shap
+import joblib
 import warnings
 warnings.filterwarnings('ignore')
 
@@ -373,46 +375,41 @@ data2.isnull().sum().sum()
 #                                      ANÁLISIS Y VISUALIZACIÓN DE DATOS
 #------------------------------------------------------------------------------------------------------------
 
-# En base a las variables que tenemos disponible empezaremos la sección formulando algunas hipótesis que
-# seran respondidas mediante el proceso de análisis de los datos.
+# En base a las variables que tenemos disponibles, empezaremos la sección formulando algunas hipótesis que seran
+# respondidas mediante el proceso de análisis de los datos.
 
-# H1: ¿Es la edad del cliente un factor que propicie la solicitud de un deposito a plazo fijo?
-# H2: ¿Que tipo de trabajos son mas propensos a tener clientes que quieran solicitar un deposito a plazo fijo?
-# H3: ¿Los clientes casados son menos propensos a solicitar un deposito a plazo fijo?
-# H4: ¿El grado de educacion alcanzado por el cliente propicia a la solicitud de un deposito a plazo fijo?
-# H5: ¿Los clientes con mora crediticia en el banco son menos propensos a solicitar un deposito a plazo fijo?
-# H6: ¿Se puede decir que los clientes con mayor dinero en su cuenta bancaria son muy propensos a solicitar un
-# deposito a plazo fijo?
-# H7: ¿Los clientes con un prestamo para vivienda en el banco son menos propensos a solicitar un deposito a plazo fijo?
-# H8: ¿Los clientes con un prestamo personal en el banco son menos propensos a solicitar un deposito a plazo fijo?
-# H9: ¿El medio de comunicacion con el que se contacta con el cliente afecta en la solicitud de un deposito a plazo fijo?
-# H10: ¿Existen dias especificos en los que sea mas probable convencer a un cliente de solicitar un deposito a plazo fijo?
-# H11: ¿Existen meses especificos en los que sea mas probable convencer a un cliente de solicitar un deposito a plazo fijo?
-# H12: ¿Se puede decir que a mayor duracion en tiempo de constacto con el cliente aumentan las posibilidades de
-# que este acepte solicitar un deposito a plazo fijo?
-# H13: ¿Es cierto que mientras mas contactos se tenga con el cliente mayor sera la posibilidad de que este
-# termine aceptando solicitar un deposito a plazo fijo?
-# H14: ¿El numero de contactos realizados en la campaña anterior afecta en la posibilidad de que los clientes
-# soliciten un deposito a plazo fijo?
-# H15: ¿Los clientes que solicitaron un deposito a plazo fijo en la campaña anterior son mas propensos a solicitar
-# el mismo servicio en la campaña actual?
+# H1: ¿Es la edad del cliente un factor que propicie la solicitud de un depósito a plazo fijo?
+# H2: ¿Qué tipo de trabajos son más propensos a tener clientes que quieran solicitar un depósito a plazo fijo?
+# H3: ¿Los clientes casados son menos propensos a solicitar un depósito a plazo fijo?
+# H4: ¿El grado de educación alcanzado por el cliente propicia a la solicitud de un depósito a plazo fijo?
+# H5: ¿Los clientes con mora crediticia en el banco son menos propensos a solicitar un depósito a plazo fijo?
+# H6: ¿Se puede decir que los clientes con mayor dinero en su cuenta bancaria son muy propensos a solicitar un depósito a plazo fijo?
+# H7: ¿Los clientes con un préstamo para vivienda en el banco son menos propensos a solicitar un depósito a plazo fijo?
+# H8: ¿Los clientes con un préstamo personal en el banco son menos propensos a solicitar un depósito a plazo fijo?
+# H9: ¿El medio de comunicación con el que se contacta al cliente afecta en la solicitud de un depósito a plazo fijo?
+# H10: ¿Existen días específicos en los que sea más probable convencer a un cliente de solicitar un depósito a plazo fijo?
+# H11: ¿Existen meses específicos en los que sea más probable convencer a un cliente de solicitar un depósito a plazo fijo?
+# H12: ¿Se puede decir que a mayor duración en tiempo de contacto con el cliente aumentan las posibilidades de que este acepte solicitar un depósito a plazo fijo?
+# H13: ¿Es cierto que mientras más contactos se tenga con el cliente mayor será la posibilidad de que este termine aceptando solicitar un depósito a plazo fijo?
+# H14: ¿El número de contactos realizados en la campaña anterior afecta en la posibilidad de que los clientes soliciten un depósito a plazo fijo?
+# H15: ¿Los clientes que solicitaron un depósito a plazo fijo en la campaña anterior son más propensos a solicitar el mismo servicio en la campaña actual?
 
 
 #--------------------
-# ANALISIS UNIVARIADO
+# ANÁLISIS UNIVARIADO
 #--------------------
 
 # Para comenzar, visualizaremos la distribución de los datos respecto a cada uno de los tres conjuntos de
-# variables que se han identificado: Variables de información del cliente - Variables de informacion bancaria
-# - Variables de campaña. Esta segmentación nos permitirá realizar un análisis mas ordenado e identificar
-# patrones e información util para entender nuestros datos.
+# variables que se han identificado: Variables de información del cliente - Variables de información bancaria
+# - Variables de campaña. Esta segmentación nos permitirá realizar un análisis más ordenado e identificar
+# patrones e información útil para entender nuestros datos.
 
 
 # VARIABLES DE INFORMACIÓN DEL CLIENTE
 
 fig, ax = plt.subplots(2, 2, figsize=(16, 8))
 plt.subplots_adjust(wspace=0.2, hspace=0.3)
-sns.histplot(data=data2, x="age", kde=True, ax=ax[0,0], color="g")
+sns.histplot(data=data2, x="age", kde=True, ax=ax[0,0])
 ax[0,0].set_title("age")
 ax[0,0].set_xlabel("")
 sns.countplot(data=data2, x="marital", ax=ax[0,1])
@@ -424,7 +421,7 @@ ax[1,0].set_xlabel("")
 sns.countplot(data=data2, x="contact", ax=ax[1,1])
 ax[1,1].set_title("contact")
 ax[1,1].set_xlabel("")
-fig.suptitle('Distribución de las variables de información del cliente', fontsize=16)
+fig.suptitle("Distribución de las variables de información del cliente", fontsize=16)
 plt.show()
 
 fig, ax = plt.subplots(1, 1, figsize=(14, 4))
@@ -433,19 +430,17 @@ ax.set_title("job")
 ax.set_ylabel("")
 plt.show()
 
-# Observamos que la mayoria de clientes del banco tienen edades que entran en el rango de los 30 y 40 años, sin
-# embargo, la diferencia entre el numero de clientes que entran en este rango y los que no, no es muy grande.
-# Entonces podemos decir que el banco en su gran mayoria tiene clientes que no sobrepasan la mediana edad.
+# Observamos que la mayoría de clientes del banco tienen edades que entran en el rango de los 30 y 40 años,
+# sin embargo, la diferencia entre el número de clientes que entran en este rango y los que no, no es muy
+# grande. Entonces podemos decir que el banco en su gran mayoría tiene clientes que no sobrepasan la mediana
+# edad.
 
-# Tambien podemos observar que la mayoria de estas personas son casadas y que muy pocas son divorciadas. A la
-# vez que tambien se ve que el tipo de educacion predominante es la secundaria y terciaria, lo cual tiene 
-# sentido ya que en estos niveles de eduacion se aprenden materias que guardan relacion con la economia y la
-# sociedad.
+# También podemos observar que la mayoría de estas personas son casadas y que muy pocas son divorciadas. Y que
+# el tipo de educación predominante es la secundaria y terciaria.
 
-# Se aprecia tambien que el medio de contacto preferido por los clientes es el celular
-
-# Por ultimo, la mayoria de clientes del banco tienen puestos de gerencia, obrero y tecnico, y muy pocos son
-# amas de casa, emprendedores o desempleados.
+# Por otra parte, se aprecia que el medio de contacto preferido por los clientes es el celular, y que la mayoría
+# de clientes del banco tienen puestos de gerencia, obrero y técnico. Y muy pocos son amas de casa, emprendedores
+# o desempleados.
 
 
 # VARIABLES DE INFORMACIÓN BANCARIA
@@ -464,80 +459,81 @@ ax[1,0].set_xlabel("")
 sns.countplot(data=data2, x="loan", ax=ax[1,1])
 ax[1,1].set_title("loan")
 ax[1,1].set_xlabel("")
-fig.suptitle('Distribución de las variables de información del cliente', fontsize=16)
+fig.suptitle("Distribución de las variables de información bancaria", fontsize=16)
 plt.show()
 
 # Con respecto a la variable "balance" (saldo del cliente en su cuenta bancaria) observamos que existen muchos
 # clientes que tienen relativamente poco dinero acumulado en sus cuentas, estos valores se encuentran en un
 # rango mayor a 0 y menor a 1000.
 
-# Tambien podemos observar que casi no existen clientes morosos en el banco, esta variable se podria relacionar
-# con "balance" en donde se observa que hay muy pocas personas con saldo negativo en sus cuentas bancarias
+# También podemos observar que casi no existen clientes morosos en el banco, esta variable se podría relacionar
+# con "balance", en donde se observa que hay muy pocas personas con saldo negativo en sus cuentas bancarias.
 
-# Por otro lado, tenemos que la cantidad de clientes que han solicitado un prestamo para vivienda es muy
-# similar a la cantidad de clientes que no solicitaron dicho prestamo.
+# Por otro lado, tenemos que la cantidad de clientes que han solicitado un préstamo para vivienda es muy similar
+# a la cantidad de clientes que no solicitaron dicho préstamo.
 
-# Por ultimo, observamos que la gran mayoria de clientes no han solicitado un prestamo personal, y los que si
-# lo han hecho, debido a que son minoria, podrian relacionarse con la poca presencia de clientes deudores en 
+# Por último, observamos que la gran mayoría de clientes no han solicitado un préstamo personal, y los que si
+# lo han hecho, debido a que son minoría, podrían relacionarse con la poca presencia de clientes deudores en
 # la variable "default" y la poca presencia de clientes con saldo negativo en la variable "balance".
 
 
 # VARIABLES DE CAMPAÑA
-fig, ax = plt.subplots(2, 1, figsize=(12, 8))
+fig, ax = plt.subplots(2, 1, figsize=(16, 8))
 plt.subplots_adjust(wspace=0.2, hspace=0.3)
 sns.countplot(data=data2, x="day", ax=ax[0])
 ax[0].set_title("day")
 ax[0].set_xlabel("")
 ax[0].set_xticklabels(range(1,32))
-sns.countplot(data=data2, x="month", ax=ax[1], order=['jan', 'feb', 'mar', 'apr', 'may', 'jun', 'jul', 'aug',
-                                                      'sep', 'oct', "nov", "dec"])
+sns.countplot(data=data2, x="month", ax=ax[1], order=["jan", "feb", "mar", "apr", "may", "jun", "jul", "aug", "sep", "oct",
+                                                      "nov", "dec"])
 ax[1].set_title("month")
 ax[1].set_xlabel("")
-fig.suptitle('Distribución de las variables de información del cliente', fontsize=16)
+fig.suptitle('Distribución de las variables de campaña', fontsize=16)
 plt.show()
 
 fig, ax = plt.subplots(2, 2, figsize=(16, 8))
 plt.subplots_adjust(wspace=0.2, hspace=0.3)
-sns.histplot(data=data2, x="duration", kde=True, ax=ax[0,0], color="g")
+sns.histplot(data=data2, x="duration", kde=True, ax=ax[0,0])
 ax[0,0].set_title("duration")
 ax[0,0].set_xlabel("")
 sns.countplot(data=data2, x="campaign", ax=ax[0,1])
 ax[0,1].set_title("campaign")
 ax[0,1].set_xlabel("")
+ax[0,1].set_xticklabels(range(1,7))
 sns.countplot(data=data2, x="previous", ax=ax[1,0])
 ax[1,0].set_title("previous")
 ax[1,0].set_xlabel("")
+ax[1,0].set_xticklabels(range(0,3))
 sns.countplot(data=data2, x="poutcome", ax=ax[1,1])
 ax[1,1].set_title("poutcome")
 ax[1,1].set_xlabel("")
-fig.suptitle('Distribución de las variables de información del cliente', fontsize=16)
 plt.show()
 
-# Observamos que la cantidad de veces con respecto a los dias en los que se contacta al cliente por ultima vez
-# estan distribuidos de forma casi equitativa, en donde solo se observan picos muy bajos en los dias 1, 10, 24
-# y 31 de cada mes, y los picos mas altos son los que se acercan a principio, quincena o final de cada mes. 
-# Esto se debe probablemente a que estos dias son previos al pago que reciben los clientes en su trabajo, por
-# ende, se intenta aprovechar el ingreso de dinero que tienen esos dias para ofrecerles los servicios de deposito
-# a plazo fijo.
+# Observamos que la cantidad de veces con respecto a los días en los que se contacta al cliente por última vez
+# están distribuidos de forma casi equitativa, en donde solo se observan picos muy bajos en los días 1, 10,
+# 24 y 31 de cada mes, y los picos más altos son los que se acercan a principio, quincena o final de cada mes.
+# Esto se debe probablemente a que estos días son previos al pago que reciben los clientes en su trabajo, por
+# ende, se intenta aprovechar el ingreso de dinero que tienen esos días para ofrecerles métodos de inversión
+# de dinero como el depósito a plazo fijo.
 
-# Con respecto al mes en el que se realizo el ultimo contacto, se observa que Mayo es un mes con mucha importancia
-# para realizar contacto con los clientes, esto podria deberse a que los datos que estamos analizando provienen
-# de un banco en Portugal, y dicho pais celebra en este mes el dia del trabajo, por lo tanto se puede suponer
-# que todos los trabajadores en dicho pais reciben un incentivo economico y el banco aprovecha esta situacion
-# para que el dinero recibido por sus clientes se invierta en la empresa.
+# Con respecto al mes en el que se realizó el último contacto, se observa que Mayo es un mes con mucha
+# importancia para realizar contacto con los clientes, esto podría deberse a que los datos que estamos
+# analizando provienen de un banco en Portugal, y dicho país celebra en este mes el día del trabajo, por lo
+# tanto se puede suponer que todos los trabajadores en dicho país reciben un incentivo económico y el banco
+# aprovecha esta situación para que el dinero recibido por sus clientes se invierta en la empresa.
 
-# Por otro lado, respecto a la duracion del ultimo contacto en segundos, podemos ver que la gran mayoria de estos
-# tuvo una duracion entorno a los 100 y 300 segundos (1.6 y 3.3 minutos respectivamente), lo cual es un tiempo
-# justo para saber la decision final del cliente
+# Por otro lado, respecto a la duración del último contacto en segundos, podemos ver que la gran mayoría de
+# estos tuvo una duración entorno a los 100 y 300 segundos (1.6 y 3.3 minutos respectivamente), lo cual es un
+# tiempo justo para saber la decisión final del cliente.
 
-# El numero de contactos realizados en esta campaña son en su gran mayoria 1 o 2. Y el numero de contactos 
-# realizados en la anterior campaña esta muy inclinado al 0, por lo tanto se puede deducir que el banco tiene
+# El número de contactos realizados en esta campaña son en su gran mayoría 1 o 2. Y el número de contactos
+# realizados en la anterior campaña está muy inclinado al 0, por lo tanto, se puede deducir que el banco tiene
 # nuevos clientes o que la campaña anterior no fue ejecutada de forma adecuada.
 
-# Por ultimo, respecto a la variable "poutcome" (resultado de la campaña anterior) podemos observar que una
-# inmensa mayoria de clientes estan etiquetados como "unknown" (desconocido), lo cual respalda la suposicion
-# que anteriormente habiamos hecho respecto a que el banco tenia nuevo clientes, debido a que esta variable 
-# guarda relacion con "previous".
+# Por último, respecto a la variable "poutcome" (resultado de la campaña anterior) podemos observar que una
+# inmensa mayoría de clientes están etiquetados como "unknown" (desconocido), lo cual respalda la suposición
+# que anteriormente habíamos hecho respecto a que el banco tenía nuevo clientes, debido a que esta variable
+# guarda relación con "previous".
 
 
 # Una vez conocida la distribución de las variables con las que vamos a trabajar, procederemos a responder las
@@ -553,7 +549,7 @@ plt.show()
 
 fig, ax = plt.subplots(2, 2, figsize=(16, 8))
 plt.subplots_adjust(hspace=0.3)
-sns.histplot(data=data2, x="age", kde=True, ax=ax[0,0], hue=data2.deposit, multiple="stack", color="g")
+sns.histplot(data=data2, x="age", kde=True, ax=ax[0,0], hue=data2.deposit, multiple="stack")
 ax[0,0].set_title("age")
 ax[0,0].set_xlabel("")
 sns.countplot(data=data2, x="marital", ax=ax[0,1], hue=data2.deposit, palette="Set2")
@@ -565,7 +561,7 @@ ax[1,0].set_xlabel("")
 sns.countplot(data=data2, x="contact", ax=ax[1,1], hue=data2.deposit, palette="Set2")
 ax[1,1].set_title("contact")
 ax[1,1].set_xlabel("")
-fig.suptitle('Variables de información del cliente vs Churn', fontsize=16)
+fig.suptitle('Variables de información del cliente vs deposit', fontsize=16)
 plt.show()
 
 fig, ax = plt.subplots(1, 1, figsize=(14, 4))
@@ -575,52 +571,50 @@ ax.set_ylabel("")
 plt.show()
 
 # En primer lugar, mediante el histograma observamos que la curva de densidad de las edades de los clientes que
-# solicitarion y no solicitaron el deposito son muy similares, obteniendo en ambos casos los picos mas altos
-# en edades que entran en el rango de los 30 y 40 años, y que estos picos se diferencian por relativamente
-# pocas cifras de las demas edades. Es decir, no existe un patron claro que indique de forma significativa que
-# una edad en especifico es mas propensa a solicitar un deposito a plazo fijo o no.
+# solicitaron y no solicitaron el depósito son muy similares, obteniendo en ambos casos los picos más altos en
+# edades que entran en el rango de los 30 y 40 años, y que estos picos se diferencian por relativamente pocas
+# cifras de las demás edades. Es decir, no existe un patrón claro que indique de forma significativa que una
+# edad en específico es más propensa a solicitar un depósito a plazo fijo o no.
 
-# Por otro lado, podemos observar que la variable "marital" no presenta relacion alguna con la solicitud de un
-# deposito a plazo fijo, ya que la cantidad de clientes que solicitaron o no el deposito se reparten de forma
+# Por otro lado, podemos observar que la variable "marital" no presenta relación alguna con la solicitud de un
+# depósito a plazo fijo, ya que la cantidad de clientes que solicitaron o no el depósito se reparten de forma
 # equitativa entre los que son solteros, casados y divorciados
 
 # El mismo comportamiento se puede apreciar en la variable "education", donde la cantidad de clientes solicitantes
-# y no solicitantes son muy parecidas en todos los grados de educacion.
+# y no solicitantes son muy parecidas en todos los grados de educación.
 
-# Con respecto a "contact", podemos identificar que los clientes con un medio de comunicacion desconocido por
-# el banco son menos propensos a solicitar un deposito a plazo fijo, esta informacion podria no ser tan
-# relevante debido a que como el medio de comunicacion es desconocido, estos datos podrian ir a cualquier de
-# las dos categorias restantes, sesgando un poco el resultado del analisis.
+# Con respecto a "contact", podemos identificar que los clientes con un medio de comunicación desconocido por
+# el banco son menos propensos a solicitar un depósito a plazo fijo, esta información podría no ser tan
+# relevante debido a que como el medio de comunicación es desconocido, estos datos podrían ir a cualquier de
+# las dos categorías restantes, sesgando un poco el resultado del análisis.
 
-# Por ultimo, en la variable "job" podemos observar que los clientes con trabajo "blue-collar" (obrero) son
-# menos propensos a solicitar un deposito a plazo fijo, pobrablemente por los pocos ingresos que se obtienen
-# de esta labor, por otra parte, observamos que los estudiantes (student) y los retirados (retired) son 
-# levemente mas propensos a solicitar este tipo de deposito, posiblemente debido a la cultura financiera que 
-# existe en la mayoria de centros educativos y la alta disponibilidad de dinero que se tiene al haberse jubilado.
+# Por último, en la variable "job" podemos observar que los clientes con trabajo "blue-collar" (obrero) son
+# menos propensos a solicitar un depósito a plazo fijo, probablemente por los pocos ingresos que se obtienen
+# de esta labor. Por otra parte, observamos que los estudiantes (student) y los retirados (retired) son
+# levemente más propensos a solicitar este tipo de depósito, posiblemente debido a la cultura financiera que
+# existe en la mayoría de centros educativos y la alta disponibilidad de dinero que se tiene al haberse
+# jubilado.
 
-# Resumiendo toda la informacion obtenida tenemos que: La edad de los clientes no es un factor muy influyente
-# para determinar si estos van a solicitar un deposito a plazo fijo o no, ademas que tanto su estado marital
-# como educacional tampoco influyen en esta decision, sin embargo, se observa que los clientes con un medio de
-# contacto desconocido por el banco son mas propensos a no solicitar este tipo de deposito, a la vez que los
+# Resumiendo toda la información obtenida tenemos que: La edad de los clientes no es un factor muy influyente
+# para determinar si estos van a solicitar un depósito a plazo fijo o no, además que tanto su estado marital
+# como educacional tampoco influyen en esta decisión, sin embargo, se observa que los clientes con un medio de
+# contacto desconocido por el banco son más propensos a no solicitar este tipo de depósito, a la vez que los
 # que tienen trabajos relacionados con la mano de obra tienen una tendencia a tampoco solicitar este servicio,
-# y las personas que son estudiantes o retiradas a menudo aceptan el deposito a plazo fijo.
+# y las personas que son estudiantes o retiradas a menudo aceptan el depósito a plazo fijo.
 
 # Respondiendo a las hipótesis tenemos que:
-# H1: La edad del cliente no afecta de forma significativa en la decision de solicitar un deposito a plazo fijo.
-# H2: Se observo que los estudiantes y las personas retiradas son ligeramente mas propensas a solicitar un
-# deposito a plazo fijo
-# H3: El estado marital del cliente no influye en la decision de solicitar un deposito a plazo fijo
-# H4: El grado de educacion alcanzado por el cliente no inluye de forma significativa en la decision de
-# solicitar un deposito a plazo fijo
-# H9: Los clientes con un medio de contacto desconocido por el banco tienen ligeramente mas probabilidad de no
-# solicitar un deposito a plazo fijo
+# H1: La edad del cliente no afecta de forma significativa en la decisión de solicitar un depósito a plazo fijo.
+# H2: Se observo que los estudiantes y las personas retiradas son ligeramente más propensas a solicitar un depósito a plazo fijo.
+# H3: El estado marital del cliente no influye en la decisión de solicitar un depósito a plazo fijo.
+# H4: El grado de educación alcanzado por el cliente no influye de forma significativa en la decisión de solicitar un depósito a plazo fijo.
+# H9: Los clientes con un medio de contacto desconocido por el banco tienen ligeramente más probabilidad de no solicitar un depósito a plazo fijo.
 
 
 # VARIABLES DE INFORMACIÓN BANCARIA VS "deposit"
 
 fig, ax = plt.subplots(2, 2, figsize=(16, 8))
 plt.subplots_adjust(hspace=0.3)
-sns.histplot(data=data2, x="balance", kde=True, ax=ax[0,0], hue=data2.deposit, multiple="stack", color="g")
+sns.histplot(data=data2, x="balance", kde=True, ax=ax[0,0], hue=data2.deposit, multiple="stack")
 ax[0,0].set_title("balance")
 ax[0,0].set_xlabel("")
 sns.countplot(data=data2, x="default", ax=ax[0,1], hue=data2.deposit, palette="Set2")
@@ -632,48 +626,44 @@ ax[1,0].set_xlabel("")
 sns.countplot(data=data2, x="loan", ax=ax[1,1], hue=data2.deposit, palette="Set2")
 ax[1,1].set_title("loan")
 ax[1,1].set_xlabel("")
-fig.suptitle('Variables de información del cliente vs Churn', fontsize=16)
+fig.suptitle('Variables de información bancaria vs deposit', fontsize=16)
 plt.show()
 
-# Del primer grafico, mediante el histograma observamos que las curvas de densidad del saldo de los clientes en
-# el banco son muy similares para los que solicitaron y no solicitaron el deposito a plazo fijo, siguiendo
-# casi una distribucion normal, no se observa algun patron marcado que indique que un rango de saldo en especifico
-# propicie o no la solicitud de un deposito a plazo fijo.
+# Del primer gráfico, mediante el histograma observamos que las curvas de densidad del saldo de los clientes
+# en el banco son muy similares para los que solicitaron y no solicitaron el depósito a plazo fijo, siguiendo
+# casi una distribución normal, no se observa algún patrón marcado que indique que un rango de saldo en
+# específico propicie o no la solicitud de un depósito a plazo fijo.
 
-# Con respecto a "default", tampoco se puede observar algun patron especifico que indique que el ser un cliente
-# moroso o no afecte en la decision de solicitar o no un deposito a plazo fijo, ya que la distribucion de estos
-# se reparten de forma equitativa en ambas ocaciones
+# Con respecto a "default", tampoco se puede observar algún patrón especifico que indique que el ser un cliente
+# moroso o no afecte en la decisión de solicitar o no un depósito a plazo fijo, ya que la distribución de estos
+# se reparte de forma equitativa en ambas ocasiones.
 
-# Con "housing" no podemos decir lo mismo, ya que aqui si se aprecia que los clientes que no solicitaron un
-# prestamo de vivienda tienen una tendencia a solicitar un deposito a plazo fijo, mientras que los que si
-# solicitaron un prestamo de vivienda tienen una tendencia a no solicitar este tipo de deposito. Esto podria
+# Con "housing" no podemos decir lo mismo, ya que aquí si se aprecia que los clientes que no solicitaron un
+# préstamo de vivienda tienen una tendencia a solicitar un depósito a plazo fijo, mientras que los que si
+# solicitaron un préstamo de vivienda tienen una tendencia a no solicitar este tipo de depósito. Esto podría
 # deberse a que como ya tienen una deuda con el banco, ese dinero solicitado no puede destinarse a otros fines
-# que no sea la adquision de una propiedad.
+# que no sea la adquisición de una propiedad.
 
-# Por ultimo, en la variable "loan" nuevamente no se observa un patron claro que indique una inclinacion hacia
-# solicitar o no solicitar un deposito a plazo fijo si el cliente ha solicitado un prestamo personal o no.
+# Por último, en la variable "loan" nuevamente no se observa un patrón claro que indique una inclinación hacia
+# solicitar o no solicitar un depósito a plazo fijo si el cliente ha solicitado un préstamo personal o no.
 
-# Resumiendo toda la informacion obtenida tenemos que: El saldo de los clientes en sus cuentas bancarias no
-# es un factor del que se pueda deducir si estos en un futuro solicitaran un deposito a plazo fijo o no, lo 
-# mismo podemos decir con respecto a si este cliente tiene mora crediticia o no, y si este solicito un prestamo
-# personal o no. Sin embargo, observamos un patron claro que indica que los clientes que solicitaron un prestamo
-# de vivienda son menos propensos a solicitar un deposito a plazo fijo, probablemente porque ese dinero solicitado
-# sera destinado a otros fines.
+# Resumiendo toda la información obtenida tenemos que: El saldo de los clientes en sus cuentas bancarias no es
+# un factor del que se pueda deducir si estos en un futuro solicitaran un depósito a plazo fijo o no, lo mismo
+# podemos decir con respecto a si este cliente tiene mora crediticia o no, y si este solicito un préstamo
+# personal o no. Sin embargo, observamos un patrón claro que indica que los clientes que solicitaron un
+# préstamo de vivienda son menos propensos a solicitar un depósito a plazo fijo, probablemente porque ese
+# dinero solicitado será destinado a otros fines.
 
 # Respondiendo a las hipótesis tenemos que:
-# H5: El hecho de tener o no tener mora crediticia no influye en la decision de solicitar o no un deposito a
-# plazo fijo
-# H6: El dinero que los clientes tengan en su cuenta bancaria no influye en la decision de solicitar o no un
-# deposito a plazo fijo
-# H7: Los clientes que solicitaron un prestamo de vivienda al banco son menos propensos a solicitar un deposito
-# a plazo fijo
-# H8: El hecho de solicitar o no un prestamo personal al banco no influye de forma significativa en la
-# decision de solicitar o no un deposito a plazo fijo
+# H5: El hecho de tener o no tener mora crediticia no influye en la decisión de solicitar o no un depósito a plazo fijo.
+# H6: El dinero que los clientes tengan en su cuenta bancaria no influye en la decisión de solicitar o no un depósito a plazo fijo.
+# H7: Los clientes que solicitaron un préstamo de vivienda al banco son menos propensos a solicitar un depósito a plazo fijo.
+# H8: El hecho de solicitar o no un préstamo personal al banco no influye de forma significativa en la decisión de solicitar o no un depósito a plazo fijo.
 
 
 # VARIABLES DE CAMPAÑA VS "deposit"
 
-fig, ax = plt.subplots(2, 1, figsize=(12, 8))
+fig, ax = plt.subplots(2, 1, figsize=(16, 8))
 plt.subplots_adjust(wspace=0.2, hspace=0.3)
 sns.countplot(data=data2, x="day", hue=data2.deposit, ax=ax[0])
 ax[0].set_title("day")
@@ -683,13 +673,13 @@ sns.countplot(data=data2, x="month", ax=ax[1], order=['jan', 'feb', 'mar', 'apr'
                                                       'sep', 'oct', "nov", "dec"], hue=data2.deposit)
 ax[1].set_title("month")
 ax[1].set_xlabel("")
-fig.suptitle('Distribución de las variables de información del cliente', fontsize=16)
+fig.suptitle('Variables de campaña vs deposit', fontsize=16)
 plt.show()
 
 
 fig, ax = plt.subplots(2, 2, figsize=(16, 8))
 plt.subplots_adjust(wspace=0.2, hspace=0.3)
-sns.histplot(data=data2, x="duration", kde=True, hue=data2.deposit, ax=ax[0,0], multiple="stack", color="g")
+sns.histplot(data=data2, x="duration", kde=True, hue=data2.deposit, ax=ax[0,0], multiple="stack")
 ax[0,0].set_title("duration")
 ax[0,0].set_xlabel("")
 sns.countplot(data=data2, x="campaign", hue=data2.deposit, ax=ax[0,1])
@@ -701,79 +691,73 @@ ax[1,0].set_xlabel("")
 sns.countplot(data=data2, x="poutcome", hue=data2.deposit, ax=ax[1,1])
 ax[1,1].set_title("poutcome")
 ax[1,1].set_xlabel("")
-fig.suptitle('Distribución de las variables de información del cliente', fontsize=16)
 plt.show()
 
-# En primer lugar podemos observar que los dias en donde se tuvo mayor exito con respecto a la solicitud de un
-# deposito a plazo fijo son los dias 1 y 10 de cada mes, el exito que se tiene en el dia 1 puede deberse a que
-# este es un dia despues del que los clientes reciben su pago mensual por laborar, entonces, al tener una
-# cantidad considerable en sus manos, es mas facil presuadirlos para que lo inviertan en el banco, tambien
-# podemos ver que este dia es uno de los que menos contacto se tiene con el cliente, por lo tanto se podria
-# recomendar para la proxima campaña aprovechar este dia para persuadir a mas personas. Con respecto a los dias
-# en los que no se tuvo exito, podemos observar que estos son el 19, 20, 28 y 29 de cada mes.
+# En primer lugar podemos observar que los días en donde se tuvo mayor éxito con respecto a la solicitud de un
+# depósito a plazo fijo son los días 1 y 10 de cada mes, el éxito que se tiene en el día 1 puede deberse a que
+# este es un día después del que los clientes reciben su pago mensual por laborar, entonces, al tener una
+# cantidad considerable de dinero en sus manos, es más fácil persuadirlos para que lo inviertan en el banco,
+# también podemos ver que este día es uno de los que menos contacto se tiene con el cliente, por lo tanto se
+# podría recomendar para la próxima campaña aprovechar este día para persuadir a más personas. Con respecto a
+# los días en los que no se tuvo éxito, podemos observar que estos son el 19, 20, 28 y 29 de cada mes.
 
-# Por otra parte, observamos que los meses en los que se tuvo mayor exito fueron marzo, septiembre, octubre y
+# Por otra parte, observamos que los meses en los que se tuvo mayor éxito fueron marzo, septiembre, octubre y
 # en menor medida diciembre, mientras que el mes en el que se tuvo un mayor fracaso fue mayo.
 
-# Con respecto a la variable "duration", se puede observar que en un principio los pocos segundos de comunicacion
-# con el cliente tienen una proporcion similar de clientes que solicitarion y no solicitaron el deposito, y que
-# a medida que el tiempo de contacto se vaya prolongando, hay mejores probabilidades de que este termine 
-# aceptando realizar este tipo de deposito. Esta es una conducta normal, ya que cuando una persona esta
-# interesada en adquirir algun producto o servicio, surgen diversas preguntas acerca de ello, lo cual, naturalmente
-# prolonga el tiempo de comunicacion con el individuo que brinda dicho servicio.
+# Con respecto a la variable "duration", se puede observar que en un principio los pocos segundos de comunicación
+# con el cliente tienen una proporción similar de clientes que solicitaron y no solicitaron el depósito, y que
+# a medida que el tiempo de contacto se vaya prolongando, hay mejores probabilidades de que este termine
+# aceptando realizar este tipo de depósito. Esta es una conducta normal, ya que cuando una persona está
+# interesada en adquirir algún producto o servicio, surgen diversas preguntas acerca de ello, lo cual,
+# naturalmente prolonga el tiempo de comunicación con el individuo o entidad que brinda dicho servicio.
 
-# En la variable "campaign" se puede apreciar que no existe un patron que indique con certeza que un determinado
-# numero de contactos favorece a la solicitud de un deposito a plazo fijo, aunque observamos que existen mas
-# clientes que aceptaron realizar el deposito cuando se realizo solo 1 contacto con ellos, la diferencia entre
+# En la variable "campaign" se puede apreciar que no existe un patrón que indique con certeza que un determinado
+# número de contactos favorece a la solicitud de un depósito a plazo fijo, aunque observamos que existen más
+# clientes que aceptaron realizar el depósito cuando se realizó solo 1 contacto con ellos, la diferencia entre
 # los que aceptaron o no, no es muy grande para considerarlo relevante.
 
 # Con "previous" no podemos decir lo mismo, ya que se ve que los clientes que no han sido contactados en una
-# campaña anterior para ofrecerles este tipo de deposito son menos propensos a aceptar dicho deposito en la
-# campaña actual, mientras que aquellos que si han sido contactados anteriormente, tienen una leve inclinacion
+# campaña anterior para ofrecerles este tipo de depósito son menos propensos a aceptar dicho depósito en la
+# campaña actual, mientras que aquellos que si han sido contactados anteriormente, tienen una leve 
 # a solicitar este tipo de servicio.
 
-# Por ultimo, respecto a la variable "poutcome", podemos observar que aquellos clientes de los que no se sabe
-# si aceptaron o no solicitar un deposito a plazo fijo tienen una tendencia a no aceptar este tipo de deposito
-# en la campaña actual, cabe mencionar que si su decision fue etiquetada como desconocida se podria deberse a que
-# son nuevos clientes, ya que esta variable guarda relacion con "previous", en donde se puede observar
-# que la cantidad de clientes a los que no se les han contactado en la campaña anterior (0) es la misma que los
-# que los que estan etiquetados como "unknown". Por otro lado observamos que aquellos clientes a los cuales se
-# les pudo persuadir para solicitar este tipo de deposito en la campaña anterior, con mucha probabilidad volveran
-# a aceptar solicitar este servicio en la campaña actual.
+# Por último, respecto a la variable "poutcome", podemos observar que aquellos clientes de los que no se sabe
+# si aceptaron o no solicitar un depósito a plazo fijo en la campaña anterior tienen una tendencia a no
+# aceptar este tipo de depósito en la campaña actual, cabe mencionar que si su decisión fue etiquetada como
+# desconocida, podría deberse a que son nuevos clientes, ya que esta variable guarda relación con "previous",
+# en donde se puede observar que la cantidad de clientes a los que no se les han contactado en la campaña
+# anterior (0) es la misma que los que los que están etiquetados como "unknown". Por otro lado, observamos que
+# aquellos clientes a los cuales se les pudo persuadir para solicitar este tipo de depósito en la campaña
+# anterior, con mucha probabilidad volverán a aceptar solicitar este servicio en la campaña actual.
 
-# Resumiendo toda la informacion obtenida tenemos que: Los dias que registraron mayor exito en la solicitud de
-# un deposito a plazo fijo fueron los 1 y 10 de cada mes, mientras que los que menos exito tuvieron fueron los
-# dias 19, 20, 28 y 29. Asimismo los meses de mayor exito fueron Marzo, Septiembre, Octubre y Diciembre, y el 
-# de menor exito Mayo. Tambien se observo que si se tiene una comunicacion corta con el cliente, la posibilidad
-# que este acepte solicitar este tipo de deposito es casi la misma que la de no solicitarlo, y que mientras
-# mayor sea el tiempo de contacto, mayor sera la posibilidad de tener exito en su persuacion. El numero de
-# contactos que se tiene con el cliente parece no afectar en su decision, sin embargo, variables referentes a
-# la campaña anterior como "previous" y "poutcome" parecen si afectar en esta decision, donde se pudo identificar
-# que aquellos clientes a los cuales no se les contacto en la campaña anterior y cuyo resultado de si aceptaron
-# solicitar el deposito a plazo fijo o no es desconocido, tienen una tendencia a no solicitar este tipo de 
-# deposito en la campaña actual, mientras que aquellos de los que se sabe que si aceptaron solicitar este
-# deposito en la campaña anterior, con mucha probabilidad volveran a solicitarlo en la campaña actual.
+# Resumiendo toda la información obtenida tenemos que: Los días que registraron mayor éxito en la solicitud de
+# un depósito a plazo fijo fueron los 1 y 10 de cada mes, mientras que los que menos éxito tuvieron fueron los
+# días 19, 20, 28 y 29. Asimismo los meses de mayor éxito fueron Marzo, Septiembre, Octubre y Diciembre, y el
+# de menor éxito Mayo. También se observó que si se tiene una comunicación corta con el cliente, la
+# posibilidad que este acepte solicitar este tipo de depósito es casi la misma que la de no solicitarlo, y que
+# mientras mayor sea el tiempo de contacto, mayor será la posibilidad de tener éxito en su persuasión. El
+# número de contactos que se tiene con el cliente parece no afectar en su decisión, sin embargo, variables
+# referentes a la campaña anterior como "previous" y "poutcome" parecen si afectar en esta decisión, donde se
+# pudo identificar que aquellos clientes a los cuales no se les contactó en la campaña anterior y cuyo resultado 
+# de si aceptaron solicitar el depósito a plazo fijo o no es desconocido, tienen una tendencia a no solicitar
+# este tipo de depósito en la campaña actual, mientras que aquellos de los que se sabe que si aceptaron
+# solicitar este depósito en la campaña anterior, con mucha probabilidad volverán a solicitarlo en la campaña
+# actual.
 
 # Respondiendo a las hipótesis tenemos que:
-# H10: Los dias en los que se observo que es mas probable convencer a los clientes de solicitar un deposito a
-# plazo fijo fueron el 1 y 10 de cada mes
-# H11: Los meses en los que se observo que es mas probable convencer a los clientes de solicitar un deposito a
-# plazo fijo fueron marzo, septiembre, octubre y diciembre
-# H12: A mayor duracion en el tiempo de contacto con el cliente mayores posibilidades hay de que este termine
-# aceptando solicitar un deposito a plazo fijo
-# H13: El numero de contactos que se tiene con el cliente parece no afectar en su decision de solicitar o no
-# un deposito a plazo fijo
-# H14: El numero de contactos que se tuvo con el cliente en la campaña anterior afecta en la posibilidad de 
-# solicitar un deposito a plazo fijo
-# H15: Aquellos clientes que solicitaron un deposito a plazo fijo en la campaña anterior con mucha probabilidad
-# volveran a solicitar este tipo de deposito en la campaña actual
+# H10: Los días en los que se observó que es más probable convencer a los clientes de solicitar un depósito a plazo fijo fueron el 1 y 10 de cada mes.
+# H11: Los meses en los que se observó que es más probable convencer a los clientes de solicitar un depósito a plazo fijo fueron marzo, septiembre, octubre y diciembre.
+# H12: A mayor duración en el tiempo de contacto con el cliente mayores posibilidades hay de que este termine aceptando solicitar un depósito a plazo fijo.
+# H13: El número de contactos que se tiene con el cliente parece no afectar en su decisión de solicitar o no un depósito a plazo fijo.
+# H14: El número de contactos que se tuvo con el cliente en la campaña anterior afecta en la posibilidad de solicitar un depósito a plazo fijo.
+# H15: Aquellos clientes que solicitaron un depósito a plazo fijo en la campaña anterior con mucha probabilidad volverán a solicitar este tipo de depósito en la campaña actual.
 
 
-# A lo largo del proceso de analisis para responder las hipotesis que inicialmente habiamos planteado, nos
-# hemos encontrado con algunos comportamientos y patrones particulares de los cuales se puede extraer informacion 
-# relevante para el analisis. Es por ello que en esta parte se compararan entre si algunas de las variables mas
-# relevantes con respecto a la decision de solicitar un deposito a plazo fijo con el fin de obtener insights 
-# que nos ayuden a entender un poco mas el comportamiento de los clientes.
+# A lo largo del proceso de análisis para responder las hipótesis que inicialmente habíamos planteado, nos
+# hemos encontrado con algunos comportamientos y patrones particulares de los cuales se puede extraer
+# información relevante para el análisis. Es por ello que en esta parte se compararan entre sí algunas de las
+# variables más relevantes con respecto a la decisión de solicitar un depósito a plazo fijo con el fin de
+# obtener insights que nos ayuden a entender un poco más el comportamiento de los clientes.
 
 
 # "job" vs "housing"
@@ -785,14 +769,14 @@ ax.set_title("job")
 ax.set_xlabel("")
 plt.show()
 
-# Del grafico podemos observar que los clientes que trabajan de obrero son los que en su gran mayoria solicitan
-# un prestamo de vivienda, es por ello que las personas con este tipo de trabajo son menos propensas a solicitar
-# un deposito a plazo fijo, ya que como vimos en analisis anteriores, el dinero que piden prestado al banco
-# va destinado a otros fines que no son los buscados en este analisis. Por otra parte, podemos observar que las
-# personas que son estudiantes o retirados son menos propensas a solicitar un prestamo de vivienda, por lo
-# tanto, uniendo los hilos con el analisis respecto a la variable "housing", es de esperar que estas personas
-# tengan mas probabilidades de solicitar un deposito a plazo fijo puesto que no tienen deudas con el banco, y 
-# probablemente su cultura financiera o experiencia les hace mas atractivo el hecho de invertir que de gastar.
+# Del grafico podemos observar que los clientes que trabajan de obrero son los que en su gran mayoría
+# solicitan un préstamo de vivienda, es por ello que las personas con este tipo de trabajo son menos propensas
+# a solicitar un depósito a plazo fijo, ya que como vimos en análisis anteriores, el dinero que piden prestado
+# al banco va destinado a otros fines que no son los buscados en este análisis. Por otra parte, podemos observar
+# que las personas que son estudiantes o retirados son menos propensas a solicitar un préstamo de vivienda, por
+# lo tanto, uniendo los hilos con el análisis respecto a la variable "housing", es de esperar que estas personas
+# tengan más probabilidades de solicitar un depósito a plazo fijo puesto que no tienen deudas con el banco, y
+# probablemente su cultura financiera o experiencia les hace más atractivo el hecho de invertir que de gastar.
 
 
 # "previous" vs "poutcome"
@@ -804,11 +788,11 @@ ax.set_title("previous")
 ax.set_xlabel("")
 plt.show()
 
-# Del siguiente grafico obtenemos un patron muy obvio en donde los clientes que no han sido contactados en la
-# campaña anterior, estan etiquetados como resultado desconocido en si solicitaron o no un deposito a plazo 
-# fijo en la campaña anterior. Por otra parte, podemos observar que efectivamente el numero de contactos que
-# se tiene con el cliente no afecta en su decision de solicitar o no este tipo de deposito, ya que como se
-# puede apreciar, las personas que solicitaron y no solicitar el deposito, se distribuyen de forma muy
+# Del siguiente grafico obtenemos un patrón muy obvio en donde los clientes que no han sido contactados en la
+# campaña anterior, están etiquetados como resultado desconocido en si solicitaron o no un depósito a plazo
+# fijo en la campaña anterior. Por otra parte, podemos observar que efectivamente el número de contactos que
+# se tiene con el cliente no afecta en su decisión de solicitar o no este tipo de depósito, ya que como se
+# puede apreciar, las personas que solicitaron y no solicitaron el depósito se distribuyen de forma muy
 # equitativa.
 
 
@@ -823,19 +807,19 @@ ax.set_title("previous")
 ax.set_xlabel("")
 plt.show()
 
-# Por ultimo, podemos observar que la media de tiempo de contacto que se tiene con cada uno de los clientes
-# pertenecientes a los distintos tipos de trabajo se distribuye de forma muy equitativa, donde la diferencia 
-# maxima que se puede apreciar es de 1 minuto. Aunque podemos ver que el tiempo de contacto que se tienen con
-# los clientes que se encuentran desempleados es ligeramente mayor al resto, esto podria deberse a que la 
-# situacion de estas personas les obligan a tener una fuente de ingresos para poder subsistir, por lo tanto,
-# el tiempo de contacto con ellos se ve mas prolongado al tener mas interes en consultar como es el
-# funcionamiento de este tipo de deposito y sus beneficios.
+# Por último, podemos observar que la media de tiempo de contacto que se tiene con cada uno de los clientes
+# pertenecientes a los distintos tipos de trabajo se distribuye de forma muy equitativa, donde la diferencia
+# máxima que se puede apreciar es de 1 minuto. Aunque podemos ver que el tiempo de contacto que se tienen con
+# los clientes que se encuentran desempleados es ligeramente mayor al resto, esto podría deberse a que la
+# situación de estas personas les obliga a tener una fuente de ingresos para poder subsistir, por lo tanto,
+# el tiempo de contacto con ellos se ve más prolongado al tener más interés en consultar como es el
+# funcionamiento de este tipo de depósito y sus beneficios.
 
 
 # Para terminar con esta sección, graficaremos una matriz de correlación para identificar el comportamiento
 # conjunto de nuestras variables sobre otras. Como estamos tratando tanto con variables categóricas como
-# numéricas, será necesario aplicar la correlacion de Pearson para las caracteristicas numericas, y la V de
-# Cramer para las categoricas.
+# numéricas, será necesario aplicar la correlación de Pearson para las características numéricas, y la V de
+# Cramer para las categóricas.
 
 
 #-----------------------
@@ -846,18 +830,18 @@ data_corr = data2.copy()
 
 data_corr["deposit"] = LabelEncoder().fit_transform(data_corr["deposit"])
 
-plt.figure(figsize=(30, 20))
+plt.figure(figsize=(18, 10))
 corr = data_corr[["age","balance","day","duration","campaign","previous","deposit"]].corr()
 mask = np.triu(np.ones_like(corr, dtype=bool))
 ax = sns.heatmap(corr, mask=mask, xticklabels=corr.columns, yticklabels=corr.columns, annot=True, linewidths=.2, cmap='coolwarm', vmin=-1, vmax=1)
 
-# De la matriz observamos que las variables numericas con mayor correlacion hacia nuestra variable dependiente
-# son "duration" y "previous". La influencia de estas variables ya lo habiamos analizado y gracias a esta matriz
-# nuestras suposiciones estan mejor respaldadas. Respecto a "duration", habiamos llegado a la conclusion que
-# mientras mayor era el numero de segundos en el que se mantenia contacto con el cliente, mayores eran las
-# posibilidades de que este terminara aceptando solicitar el deposito. Y con respecto a "previous", identificamos
-# que los clientes que no habian sido contactados en una campaña anterior, tenian mas probabilidad de no 
-# solicitar el deposito en la campaña actual
+# De la matriz observamos que las variables numéricas con mayor correlación hacia nuestra variable dependiente
+# son "duration" y "previous". La influencia de estas variables ya lo habíamos analizado y gracias a esta
+# matriz nuestras suposiciones están mejor respaldadas. Respecto a "duration", habíamos llegado a la conclusión
+# que mientras mayor era el número de segundos en el que se mantenía contacto con el cliente, mayores eran las
+# posibilidades de que este terminara aceptando solicitar el depósito. Y con respecto a "previous", identificamos
+# que los clientes que no habían sido contactados en una campaña anterior, tenían más probabilidad de no
+# solicitar el depósito en la campaña actual.
 
 
 #------------
@@ -870,85 +854,84 @@ data_corr = data_corr.apply(lambda x: x.astype("category") if x.dtype == "O" els
 cramersv = am.CramersV(data_corr) 
 result = cramersv.fit()
 
-# Con respecto a la asociacion entre nuestras variables categoricas y nuestra variable dependiente podemos 
-# observar que aquellas cuyo valor de asociacion es mayor que el resto son "housing", "contact", "month" y
-# "poutcome", las cuales habiamos en analisis anteriores que presentaban ciertos patrones que indicaban la
-# inclinacion del cliente hacia solicitar o no solicitar un deposito a plazo fijo. Donde los clientes que
-# solicitaron un prestamo de vivienda eran menos propensos a solicitar este tipo de deposito, al iguales que
-# los clientes de los que no se conocia el medio de comunicacion por el cual se les contactaba. Con respecto
-# a los meses observamos que habian algunos en los que se tenian resultados muchos mas positivos y otros en
-# los que no habia mucho exito. Por ultimo, tambien pudimos identificar que aquellos clientes que habian 
-# solicitado realizar este tipo de deposito en la campaña anterior con mucha probabilidad volverian a solicitarlo
-# en la campaña actual, mientras que aquellos que eran nuevos en el banco y no se tenia un registro acerca de
-# su decision tenian una tendencia a no solicitar este servicio.
+# Con respecto a la asociación entre nuestras variables categóricas y nuestra variable dependiente podemos
+# observar que aquellas cuyo valor de asociación es mayor que el resto son "housing", "contact", "month" y
+# "poutcome", las cuales en análisis anteriores habíamos observado que presentaban ciertos patrones que indicaban
+# la inclinación del cliente hacia solicitar o no solicitar un depósito a plazo fijo. Donde los clientes que
+# solicitaron un préstamo de vivienda eran menos propensos a solicitar este tipo de depósito, al iguales que
+# los clientes de los que no se conocía el medio de comunicación por el cual se les contactaba. Con respecto a
+# los meses, observamos que había algunos en los que se tenían resultados muchos más positivos y otros en los
+# que no había mucho éxito. Por último, también pudimos identificar que aquellos clientes que habían solicitado
+# realizar este tipo de depósito en la campaña anterior con mucha probabilidad volverían a solicitarlo en la
+# campaña actual, mientras que aquellos que eran nuevos en el banco y no se tenía un registro acerca de su
+# decisión, tenían una tendencia a no solicitar este servicio.
 
-# Gracias al valor de la asociacion de Cramer tambien podemos obtener algunos otros insights interesantes como:
+# Gracias al valor de la asociación de Cramer también podemos obtener algunos otros insights interesantes como:
     
 # "month" vs "housing"
 
-fig, ax = plt.subplots(1, 1, figsize=(12, 8))
-plt.subplots_adjust(wspace=0.2, hspace=0.3)
-sns.countplot(data=data2, x="month", order=['jan', 'feb', 'mar', 'apr', 'may', 'jun', 'jul', 'aug', 'sep',
-                                            'oct', "nov", "dec"], hue=data2.housing)
+fig, ax = plt.subplots(1, 1, figsize=(16, 8))
+sns.countplot(data=data2, x="month", order=['jan', 'feb', 'mar', 'apr', 'may', 'jun', 'jul', 'aug', 'sep', 'oct', "nov", "dec"],
+              hue=data2.housing)
+plt.show()
 
-# En donde podemos observar que existe un numero significativo de clientes que han sido contactados por ultima
-# vez en Mayo y que han solicitado un prestamo de vivienda. Esto podria indicar que los clientes tienen una
-# tendencia a solicitar este prestamo un mes antes de Mayo, ya que se puede observar como en Abril el numero
-# de personas con esta solicitud van en aumento, y como pasado el mes de Mayo este numero decrece, volviendo
-# a un estado estandar en el que el numero de personas que no solicitaron este tipo de prestamos son mayores o
-# iguales a las que si lo solicitaron.
+# En donde podemos observar que existe un número significativo de clientes que han sido contactados por última
+# vez en mayo y que han solicitado un préstamo de vivienda. Esto podría indicar que los clientes tienen una
+# tendencia a solicitar este préstamo un mes antes de Mayo, ya que se puede observar cómo en Abril el número de
+# personas con esta solicitud van en aumento, y como pasado el mes de Mayo este número decrece, volviendo a un
+# estado estándar en el que el número de personas que no solicitaron este tipo de préstamos son mayores o iguales
+# a las que si lo solicitaron.
 
 
 # "job" vs "education"
 
-fig, ax = plt.subplots(1, 1, figsize=(12, 8))
-plt.subplots_adjust(wspace=0.2, hspace=0.3)
+fig, ax = plt.subplots(1, 1, figsize=(16, 8))
 sns.countplot(data=data2, x="job", hue=data2.education)
 ax.set_title("job")
 ax.set_xlabel("")
+plt.show()
 
-# Por ultimo, podemos observar un patron completamente normal en donde la mayoria de personas que tienen cargos
-# relacionados con la gerencia, tienen estudios terciarios (universitarios o de instituto). Y que los demas
-# puestos de trabajo estan conformados por personas cuyo grado de educacion mayormente es secundario, excepto
-# en el caso de los obreros, retirados y amas de casa, donde la distribucion entre las personas con educacion
+# Por último, podemos observar un patrón completamente normal en donde la mayoría de personas que tienen cargos
+# relacionados con la gerencia, tienen estudios terciarios (universitarios o de instituto). Y que los demás
+# puestos de trabajo están conformados por personas cuyo grado de educación mayormente es secundario, excepto
+# en el caso de los obreros, retirados y amas de casa, donde la distribución entre las personas con educación
 # secundaria y primaria es casi equitativa.
-
 
 #------------------------------------------------------------------------------------------------------------
 #                                           TRANSFORMACIÓN DE DATOS
 #------------------------------------------------------------------------------------------------------------
 
-# Empezaremos por eliminar la variable "duration" de la cual anteriormente habiamos hablado, ya que aporta
-# informacion de la cual no se dispone en la realidad al momento de predecir si un cliente solicitara o no un
-# deposito a plazo fijo, ya que la duracion de la llamada con el cliente se conoce despues de saber la decision
+# Empezaremos por eliminar la variable "duration" de la cual anteriormente habíamos hablado, ya que aporta
+# información de la cual no se dispone en la realidad al momento de predecir si un cliente solicitara o no un
+# depósito a plazo fijo, ya que la duración de la llamada con el cliente se conoce después de saber la decisión
 # de este, mas no antes.
 
 data = data.drop(["duration"], axis=1)
 data2 = data2.drop(["duration"], axis=1)
 
 #---------------------------
-# CODIFICIACION DE VARIABLES
+# CODIFICIACIÓN DE VARIABLES
 #---------------------------
 
-# Como uno de los objetivos de este proyecto es implementar CatBoost para la prediccion de clientes que
-# solicitaran o no un deposito a plazo fijo en el futuro, no sera necesario codificar de forma manual nuestras
-# variables categoricas, ya que CatBoost internamente realiza este proceso por nosotros, implementando una
-# codicaficacion basada en Target Encoder con algunas modificaciones que el algoritmo cree pertinente. Solo
-# seria necesario aplicar una codificacion de etiqueta si nuestra variable dependiente es dicotomica. Sin
-# embargo, para demostrar que efectividad tiene el delegarle la codificacion a CatBoost y hacerlo de forma
-# manual en la precision de nuestro modelo, construiremos dos modelos utilizando ambas tecnicas y posteriomente
-# evaluaremos su rendimiento
+# Como uno de los objetivos de este proyecto es implementar CatBoost para la predicción de clientes que solicitaran
+# o no un depósito a plazo fijo en el futuro, no será necesario codificar de forma manual nuestras variables
+# categóricas, ya que CatBoost internamente realiza este proceso por nosotros, implementando una codificación
+# basada en Target Encoder con algunas modificaciones que el algoritmo cree pertinente. Solo sería necesario
+# aplicar una codificación de etiqueta a nuestra variable dependiente solo si esta es dicotómica. Sin embargo,
+# para demostrar que efectividad tiene el delegarle la codificación a CatBoost y hacerlo de forma manual en la
+# precisión de nuestro modelo, construiremos dos modelos utilizando ambas técnicas y posteriormente evaluaremos
+# su rendimiento.
 
 
-# CON CODIFICACION MANUAL
+# CON CODIFICACIÓN MANUAL
 #------------------------
 
-# Puesto que el algoritmo que vamos a utilizar esta basado en árboles de decision, para evitar el aumento
-# exponencial de variables independientes al implementar una codificacion One Hot Econding y todos los problemas
-# que esto conyeva, podemos utilizar Label Encoder como alternativa, ya que los arboles de decision no se ven
-# perjudicados al tener variables ordinales que originalmente son nominales
+# Puesto que el algoritmo que vamos a utilizar está basado en árboles de decisión, para evitar el aumento
+# exponencial de variables independientes al implementar una codificación One Hot Econding y todos los
+# problemas que esto conlleva, podemos utilizar Label Encoder como alternativa, ya que los árboles de decisión
+# no se ven perjudicados al tener variables ordinales que originalmente son nominales.
 
-# Codificacion de variables en el conjunto con outliers
+# Codificación de variables en el conjunto con outliers
 data_cod = data.copy()
 
 cols = ["job", "marital", "education", "default", "housing", "loan", "contact", "month", "poutcome", "deposit"]
@@ -956,7 +939,7 @@ cols = ["job", "marital", "education", "default", "housing", "loan", "contact", 
 for col in cols:
     data_cod[col] = LabelEncoder().fit_transform(data_cod[col])
     
-# Codificacion de variables en el conjunto sin outliers
+# Codificación de variables en el conjunto sin outliers
 
 data2_cod = data2.copy()
 
@@ -964,13 +947,13 @@ for col in cols:
     data2_cod[col] = LabelEncoder().fit_transform(data2_cod[col])
 
 
-# SIN CODIFICACION MANUAL
+# SIN CODIFICACIÓN MANUAL
 #------------------------
 
-# Codificacion de etiqueta a la variable dependiente del conjunto con outliers 
+# Codificación de etiqueta a la variable dependiente del conjunto con outliers 
 data["deposit"] = LabelEncoder().fit_transform(data["deposit"])
 
-# Codificacion de etiqueta a la variable dependiente del conjunto sin outliers 
+# Codificación de etiqueta a la variable dependiente del conjunto sin outliers 
 data2["deposit"] = LabelEncoder().fit_transform(data2["deposit"])
 
 
@@ -978,7 +961,7 @@ data2["deposit"] = LabelEncoder().fit_transform(data2["deposit"])
 # CREACIÓN DE CONJUNTOS DE ENTRENAMIENTO Y VALIDACIÓN
 #----------------------------------------------------
 
-# PARA DATOS CON OUTLIERS Y SIN CODIFICACION MANUAL
+# PARA DATOS CON OUTLIERS Y SIN CODIFICACIÓN MANUAL
 #--------------------------------------------------
 X = data.iloc[: , :-1].values
 y = data.iloc[: , -1].values
@@ -986,7 +969,7 @@ y = data.iloc[: , -1].values
 X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.30, random_state=21, stratify=y)
 
 
-# PARA DATOS CON OUTLIERS Y CON CODIFICACION MANUAL
+# PARA DATOS CON OUTLIERS Y CON CODIFICACIÓN MANUAL
 #--------------------------------------------------
 X_cod = data_cod.iloc[: , :-1].values
 y_cod = data_cod.iloc[: , -1].values
@@ -995,7 +978,7 @@ X_train_cod, X_test_cod, y_train_cod, y_test_cod = train_test_split(X_cod, y_cod
                                                                     random_state=21, stratify=y)
 
 
-# PARA DATOS SIN OUTLIERS Y SIN CODIFICACION MANUAL
+# PARA DATOS SIN OUTLIERS Y SIN CODIFICACIÓN MANUAL
 #--------------------------------------------------
 X2 = data2.iloc[: , :-1].values
 y2 = data2.iloc[: , -1].values
@@ -1003,7 +986,7 @@ y2 = data2.iloc[: , -1].values
 X2_train, X2_test, y2_train, y2_test = train_test_split(X2, y2, test_size=0.30, random_state=21, stratify=y)
 
 
-# PARA DATOS SIN OUTLIERS Y CON CODIFICACION MANUAL
+# PARA DATOS SIN OUTLIERS Y CON CODIFICACÓN MANUAL
 #--------------------------------------------------
 X2_cod = data2_cod.iloc[: , :-1].values
 y2_cod = data2_cod.iloc[: , -1].values
@@ -1027,11 +1010,11 @@ plt.show()
 counter_total = Counter(data["deposit"])
 print(counter_total)
 
-# Observamos que no tenemos una desproporcion muy grave con respecto al numero de muestras en cada clase, por
-# lo tanto, podemos obviar el uso de tecnicas de sobremuestreo y submuestreo para el rebalanceo de muestras.
-# Cabe mencionar que CatBoost tambien posee un hiperparámetro encargado de solucionar este problema, añadiendo
+# Observamos que no tenemos una desproporción muy grave con respecto al número de muestras en cada clase, por
+# lo tanto, podemos obviar el uso de técnicas de sobre muestreo y submuestreo para el rebalanceo de muestras.
+# Cabe mencionar que CatBoost también posee un hiperparámetro encargado de solucionar este problema, añadiendo
 # pesos a las muestras de la clase minoritaria para que su impacto en el modelo sea casi el mismo que el de la
-# clase mayoritaria, por lo tanto, podriamos hacer uso de esta funcion para mejorar un poco mas el rendimiento
+# clase mayoritaria, por lo tanto, podríamos hacer uso de esta función para mejorar un poco más el rendimiento
 # predictivo de nuestro modelo.
 
 
@@ -1039,39 +1022,39 @@ print(counter_total)
 #                               CONSTRUCCIÓN Y EVALUACIÓN DEL MODELO PREDICTIVO
 #------------------------------------------------------------------------------------------------------------
 
-# Como ya se menciono en la introducción de este proyecto, para la construccion de un modelo predictivo
+# Como ya se mencionó en la introducción de este proyecto, para la construcción de un modelo predictivo
 # utilizaremos CatBoost.
 
-# El motivo principal por el que elegimos este algoritmo basado en el aumento del gradiente es porque
-# ofrece soporte para el trabajo de clasificacion y regresion con variables categoricas, ademas que en la
-# mayoria de ocaciones se puede obtener resultados considerablemente buenos sin realizar demasiados ajustes
-# en los hiperparametros, y por ultimo, porque es relativamente rapido entrenarlo, incluso cuando se tiene una
-# cantidad considerable de datos. Estas cualidades encajan bien con nuestro conjunto de datos, puesto que 
-# tenemos alrededor de 11000 observaciones las cuales tienen caracteristicas pertenecientes tanto a variables
-# categoricas como numericas.
+# El motivo principal por el que elegimos este algoritmo basado en el aumento del gradiente es porque ofrece
+# soporte para el trabajo de clasificación y regresión con variables categóricas sin la necesidad de pre
+# procesarlas, además que en la mayoría de ocasiones se puede obtener resultados considerablemente buenos sin
+# realizar demasiados ajustes en los hiperparametros. Y por último, porque es relativamente rápido entrenarlo,
+# incluso cuando se tiene una cantidad considerable de datos. Estas cualidades encajan bien con nuestro conjunto
+# de datos, puesto que tenemos alrededor de 11000 observaciones las cuales tienen características pertenecientes
+# tanto a variables categóricas como numéricas.
 
 
 #-----------------------------
 # ELECCIÓN DE HIPERPARÁMETROS
 #-----------------------------
 
-# Como anteriormente habiamos dicho, CatBoost puede obtener resultados buenos con la configuracion de
+# Como anteriormente habíamos dicho, CatBoost puede obtener resultados buenos con la configuración de
 # hiperparametros predeterminada, sin embargo, el objetivo de este proyecto es obtener el mejor modelo posible
-# que pueda predecir de forma correcta la solicitud de deposito a plazo fijo de los clientes, es por ello que
-# haciendo uso de la librería Optuna, intentaremos encontrar la combinación de hiperparametros que mejor se
-# ajuste a nuestros datos.
+# que pueda predecir de forma correcta la solicitud de depósito a plazo fijo de los clientes, es por ello que
+# haciendo uso de la librería Optuna, mediante la optimización bayesiana, intentaremos encontrar la combinación
+# de hiperparametros que mejor se ajuste a nuestros datos.
 
 # Dado que a lo largo de este proyecto hemos realizado distintas transformaciones a nuestros datos, y hemos
-# guardado una copia del conjunto de datos antes de realizar dicha transformacion, aplicaremos la funcion de
-# busqueda de hiperparametros a cada uno de estos conjuntos, con el fin de comparar hasta que paso de la transformación
-# es necesaria para obtener el modelo con el mejor rendimiento posible, o si para este caso, no es necesario
-# aplicar transformacion alguna. Es por ello que dividiremos esta seccion en cuatro partes, basado en los 
-# cuatro conjuntos de datos obtenidos:
+# guardado una copia del conjunto de datos antes de realizar dicha transformación, aplicaremos la función de
+# búsqueda de hiperparametros a cada uno de estos conjuntos, con el fin de comparar hasta que paso de la
+# transformación es necesaria para obtener el modelo con el mejor rendimiento posible, o si para este caso, no
+# es necesario aplicar transformación alguna. Es por ello que dividiremos esta sección en cuatro partes,
+# basado en los cuatro conjuntos de datos obtenidos:
     
-# Hiperparámetros para datos con outliers y sin codificacion manual
-# Hiperparámetros para datos con outliers y con codificacion manual
-# Hiperparámetros para datos sin outliers y sin codificacion manual
-# Hiperparámetros para datos sin outliers y con codificacion manual
+# Hiperparámetros para datos con outliers y sin codificación manual
+# Hiperparámetros para datos con outliers y con codificación manual
+# Hiperparámetros para datos sin outliers y sin codificación manual
+# Hiperparámetros para datos sin outliers y con codificación manual
 
 #------------------------------
 # HIPERPARÁMETROS PARA DATOS CON OUTLIERS Y SIN CODIFICACION MANUAL
@@ -1117,27 +1100,27 @@ study.optimize(objective, n_trials=70)
 print('Best trial: score {}, params {}'.format(study.best_trial.value, study.best_trial.params))
 best_1 = study.trials_dataframe()
 
-# Se ejecutó la función tres veces de forma independiente, y posterior a ello, se registro
-# la mejor combinación de parámetros que arrojo cada ejecución, siendo estas las siguientes:
+# Se ejecutó la función tres veces de forma independiente, y posterior a ello, se registró la mejor combinación
+# de hiperparámetros que arrojo cada ejecución, siendo estas las siguientes:
 
 # 73.96% | iterarions=600, learning_rate=0.166129, depth=7, l2_leaf_reg=0.963535, random_strength=11, bagging_temperature=1, max_ctr_complexity=0
 # 74.08% | iterarions=1200, learning_rate=0.246729, depth=9, l2_leaf_reg=7.2024, random_strength=33, bagging_temperature=1, max_ctr_complexity=2
 # 73.72% | iterarions=500, learning_rate=0.208787, depth=10, l2_leaf_reg=1.25048, random_strength=15, bagging_temperature=1, max_ctr_complexity=2
 
-# Procederemos a entrenar modelos CatBoost en base a estas tres combinaciones de hiperparámetros obtenidas
-# para determinar cual de ellas presenta mejores resultados al clasificar nuestros datos.
+# Procederemos a entrenar modelos CatBoost en base a estas tres combinaciones de hiperparámetros obtenidas para
+# determinar cuál de ellas presenta mejores resultados al clasificar nuestros datos.
 
 # Identificación de variables categoricas
-categorical_features_indices = np.where(data.dtypes == np.object)[0]
-train_pool = Pool(X_train, y_train, cat_features = categorical_features_indices)
-test_pool = Pool(X_test, y_test, cat_features = categorical_features_indices)
+categorical_features_indices1 = np.where(data.dtypes == np.object)[0]
+train_pool1 = Pool(X_train, y_train, cat_features = categorical_features_indices1)
+test_pool1 = Pool(X_test, y_test, cat_features = categorical_features_indices1)
 
 # Para la primera combinación
 cb_1a = CatBoostClassifier(iterations=600, learning_rate=0.166129, depth=7, l2_leaf_reg=0.963535, random_strength=11,
                             bagging_temperature=1, max_ctr_complexity=0, auto_class_weights= "Balanced", loss_function = "Logloss",
                             eval_metric = "AUC", task_type= "GPU", use_best_model= True, random_seed=42)
 
-cb_1a.fit(train_pool, eval_set = test_pool)
+cb_1a.fit(train_pool1, eval_set = test_pool1, logging_level="Silent")
 y_pred_1a = cb_1a.predict(X_test)
 
 # Para la segunda combinación
@@ -1145,7 +1128,7 @@ cb_1b = CatBoostClassifier(iterations=1200, learning_rate=0.246729, depth=9, l2_
                             bagging_temperature=1, max_ctr_complexity=2, auto_class_weights= "Balanced", loss_function = "Logloss",
                             eval_metric = "AUC", task_type= "GPU", use_best_model= True, random_seed=42)
 
-cb_1b.fit(train_pool, eval_set = test_pool)
+cb_1b.fit(train_pool1, eval_set = test_pool1, logging_level="Silent")
 y_pred_1b = cb_1b.predict(X_test)
 
 # Para la tercera combinación
@@ -1153,7 +1136,7 @@ cb_1c = CatBoostClassifier(iterations=500, learning_rate=0.208787, depth=10, l2_
                             bagging_temperature=1, max_ctr_complexity=2, auto_class_weights= "Balanced", loss_function = "Logloss",
                             eval_metric = "AUC", task_type= "GPU", use_best_model= True, random_seed=42)
 
-cb_1c.fit(train_pool, eval_set = test_pool)
+cb_1c.fit(train_pool1, eval_set = test_pool1, logging_level="Silent")
 y_pred_1c = cb_1c.predict(X_test)
 
 
@@ -1177,9 +1160,9 @@ acc_1c = accuracy_score(y_test, y_pred_1c)
 auc_1c = roc_auc_score(y_test, y_pred_1c)
 report_1c = classification_report(y_test,y_pred_1c)
 
-# A continuación visualizaremos el puntaje de la métrica F1 y la precisión para cada combinación, a la vez que
-# tambien observaremos un reporte de las principales métricas para evaluar la capacidad de clasificación de
-# nuestros modelos
+# A continuación, visualizaremos el puntaje de la métrica F1 y la precisión para cada combinación, a la vez que
+# también observaremos un reporte de las principales métricas para evaluar la capacidad de clasificación de
+# nuestros modelos.
 
 print("F1 primera comb.: %.2f%%" % (f1_1a * 100.0))
 print("Accuracy primera comb.: %.2f%%" % (acc_1a * 100.0))
@@ -1196,8 +1179,8 @@ print(report_1b)
 print("-------------------------------------------------")
 print(report_1c)
 
-# En principio, observamos que la segunda combinacion es la que presenta valores de métrica mayores que las
-# demas combinaciones, aunque la diferencia entre ellos es muy minima.
+# En principio, observamos que tanto la primera como la segunda combinación presentan valores de métrica superiores
+# en comparación con la tercera combinación, aunque la diferencia entre ellos es mínima.
 
 # Procederemos a graficar la matriz de confusión y la curva ROC-AUC.
 
@@ -1214,11 +1197,13 @@ ax[2].set_title("COMBINACIÓN 3",fontsize=14)
 
 plt.show()
 
-# Con respecto a las matrices de confusion, observamos que la combinacion 2 presenta un ratio mejor equilibrado
-# al momento de predecir correctamente si un cliente solicita un deposito a plazo fijo o no, a la vez que 
-# tambien observamos que la combinacion 3 es la que peores resultado presenta al realizar esta clasificacion. Es
-# por ello que tomaremos en cuenta a la combinacion 2 como la que mejores resultados arrojo en este apartado de
-# evaluacion.
+# Con respecto a las matrices de confusión, observamos que la segunda combinación presenta un ratio mejor
+# equilibrado al momento de predecir correctamente si un cliente solicita un depósito a plazo fijo o no, a la
+# vez que también observamos que la tercera combinación presenta resultados ineficientes al realizar esta
+# clasificación, ya que predice correctamente más muestras positivas (1) en comparación de las demás combinaciones,
+# pero a coste de una cantidad considerable en la correcta predicción de muestras negativas (0). Es por ello
+# que tomaremos en cuenta a la segunda combinación como la que mejores resultados arrojó en este apartado de
+# evaluación.
 
 y_pred_prob1a = cb_1a.predict_proba(X_test)[:,1]
 fpr_1a, tpr_1a, thresholds_1a = roc_curve(y_test, y_pred_prob1a)
@@ -1238,26 +1223,26 @@ plt.title('Curva ROC-AUC',fontsize=16)
 plt.legend()
 plt.show()
 
-# Del grafico de la curva ROC-AUC no podemos diferenciar claramente si la combinacion 1 o 2 es la que mejor tasa
-# de verdaderos positivos (VP) y falsos positivos (FP) tiene, sin embargo, podemos observar que la curva de la
-# combinacion 3 tiende a ser menor comparado con las demas combinaciones, por lo que combinado con los resultados
-# de las metricas anteriores, podemos ir descartando esta combinacion.
+# Del grafico de la curva ROC-AUC no podemos diferenciar claramente si la combinación 1 o 2 es la que mejor
+# tasa de verdaderos positivos (VP) y falsos positivos (FP) tiene, sin embargo, podemos observar que la curva
+# de la tercera combinación tiende a ser menor comparado con las demás combinaciones, por lo que combinado con
+# los resultados de las métricas anteriores, podemos ir descartando esta combinación.
 
 print("AUC primera comb.: %.2f%%" % (auc_1a * 100.0))
 print("AUC segunda comb.: %.2f%%" % (auc_1b * 100.0))
 print("AUC tercera comb.: %.2f%%" % (auc_1c * 100.0))
 
-# Por ultimo, podemos ver que el valor de la metrica AUC nos da claridad al momento de decidir que combinacion
-# presenta una mejor tasa de VP y FP, ya que como habiamos deducido anteriormente, la combinacion 3 es la que
-# peores resultados arroja, y que tanto la combinacion 1 como la combinacion 2 presentan resultados similares,
-# sin embargo, la combinacion 2 presenta una ligera superioridad comparado con las demas combinaciones. Entonces,
-# uniendo los resultados de las metricas anteriormente vistas, podemos concluir que el modelo construido con la
-# combinacion 2 es el que mejor clasifica estos datos, por lo tanto, utilizaremos este modelo como referente
-# del conjunto de "Hiperparametros para datos con outliers y sin codificacion manual".
+# Por último, podemos ver que el valor de la métrica AUC nos da claridad al momento de decidir qué combinación
+# presenta una mejor tasa de VP y FP, ya que como habíamos deducido anteriormente, la tercera combinación es la
+# que peores resultados arroja, y que tanto la primera como la segunda combinación presentan resultados
+# similares, sin embargo, la segunda combinación presenta una ligera superioridad comparado con las demás
+# combinaciones. Entonces, uniendo los resultados de las métricas anteriormente vistas, podemos concluir que el
+# modelo construido con la segunda combinación es el que mejor clasifica estos datos, por lo tanto, utilizaremos
+# este modelo como referente del conjunto de "Hiperparámetros para datos con outliers y sin codificación manual".
  
 
 #------------------------------
-# HIPERPARÁMETROS PARA DATOS CON OUTLIERS Y CON CODIFICACION MANUAL
+# HIPERPARÁMETROS PARA DATOS CON OUTLIERS Y CON CODIFICACIÓN MANUAL
 
 def objective(trial):   
 
@@ -1272,7 +1257,7 @@ def objective(trial):
               "loss_function": "Logloss",
               "eval_metric": "AUC",
               "task_type": "GPU",
-              "od_type" : "Iter",  # Parametros relacionados con early stop
+              "od_type" : "Iter",
               "od_wait" : 30,
               "use_best_model": True,
               "random_seed": 42}
@@ -1304,26 +1289,26 @@ best_2 = study.trials_dataframe()
 # 74.23% | iterarions=1000, learning_rate=0.0686307, depth=7, l2_leaf_reg=6.87847, random_strength=2, bagging_temperature=1, max_ctr_complexity=1
 # 74.17% | iterarions=500, learning_rate=0.103597, depth=11, l2_leaf_reg=7.95198, random_strength=8, bagging_temperature=0, max_ctr_complexity=4
 
-# Procederemos a entrenar modelos CatBoost en base a estas tres combinaciones de hiperparámetros obtenidas
-# para determinar cual de ellas presenta mejores resultados al clasificar nuestros datos.
+# Procederemos a entrenar modelos CatBoost en base a estas tres combinaciones de hiperparámetros obtenidas para
+# determinar cuál de ellas presenta mejores resultados al clasificar nuestros datos.
 
-train_pool = Pool(X_train_cod, y_train_cod)
-test_pool = Pool(X_test_cod, y_test_cod)
+train_pool2 = Pool(X_train_cod, y_train_cod)
+test_pool2 = Pool(X_test_cod, y_test_cod)
 
 # Para la primera combinación
 cb_2a = CatBoostClassifier(iterations=900, learning_rate=0.198706, depth=9, l2_leaf_reg=4.72514, random_strength=40,
                             bagging_temperature=0, max_ctr_complexity=3, auto_class_weights= "Balanced", loss_function = "Logloss",
                             eval_metric = "AUC", task_type= "GPU", use_best_model= True, random_seed=42)
 
-cb_2a.fit(train_pool, eval_set = test_pool)
+cb_2a.fit(train_pool2, eval_set = test_pool2, logging_level="Silent")
 y_pred_2a = cb_2a.predict(X_test_cod)
 
-# Para la segunda combinación #Utilizando random seed
+# Para la segunda combinación
 cb_2b = CatBoostClassifier(iterations=1000, learning_rate=0.0686307, depth=7, l2_leaf_reg=6.87847, random_strength=2,
                             bagging_temperature=1,  max_ctr_complexity=1, auto_class_weights= "Balanced", loss_function = "Logloss",
                             eval_metric = "AUC", task_type= "GPU", use_best_model= True, random_seed=42)
 
-cb_2b.fit(train_pool, eval_set = test_pool)
+cb_2b.fit(train_pool2, eval_set = test_pool2, logging_level="Silent")
 y_pred_2b = cb_2b.predict(X_test_cod)
 
 # Para la tercera combinación
@@ -1331,7 +1316,7 @@ cb_2c = CatBoostClassifier(iterations=500, learning_rate=0.103597, depth=11, l2_
                             bagging_temperature=0, max_ctr_complexity=4, auto_class_weights= "Balanced", loss_function = "Logloss",
                             eval_metric = "AUC", task_type= "GPU", use_best_model= True, random_seed=42)
 
-cb_2c.fit(train_pool, eval_set = test_pool)
+cb_2c.fit(train_pool2, eval_set = test_pool2, logging_level="Silent")
 y_pred_2c = cb_2c.predict(X_test_cod)
 
 
@@ -1371,10 +1356,9 @@ print(report_2b)
 print("-------------------------------------------------")
 print(report_2c)
 
-# Se puede observar que si bien todos los valores de métrica para todas las combinaciones que tenemos
-# son muy similares, la tercera combinacion es la que destaca por un pequeño margen porcentual de las
-# demas. Mientras que la primera combinacion parece tener ligeramente un rendimiento menor en comparacion
-# con las demas combinaciones
+# Se puede observar que, si bien todos los valores de métrica para todas las combinaciones que tenemos son muy
+# similares, la tercera combinación es la que destaca por un pequeño margen porcentual de las demás. Mientras
+# que tanto la primera como la segunda combinación parecen tener un rendimiento equivalente.
 
 fig, ax = plt.subplots(1, 3, figsize=(20, 5))
 
@@ -1389,10 +1373,10 @@ ax[2].set_title("COMBINACIÓN 3",fontsize=14)
 
 plt.show()
 
-# De las matrices de confusion podemos reafirmar nuestra suposicion al observar que la combinacion 3
-# es la que presenta un mejor ratio de VP y FP, mientras que la combinacion 1 esta por debajo de las
-# demas combinaciones, lo cual nos da motivos para poder ir descartando el modelo construido con esta
-# ultima combinacion.
+# De las matrices de confusión podemos reafirmar nuestra suposición al observar que la tercera combinación es
+# la que presenta un mejor ratio de VP y FP, mientras que la segunda y la primera combinación presentan ratios
+# que se complementan entre sí, ya que el punto fuerte de la primera combinación son los VP, mientras que su
+# punto débil, los FP, es el punto fuerte de la segunda combinación.
 
 y_pred_prob2a = cb_2a.predict_proba(X_test_cod)[:,1]
 fpr_2a, tpr_2a, thresholds_2a = roc_curve(y_test_cod, y_pred_prob2a)
@@ -1412,26 +1396,25 @@ plt.title('Curva ROC-AUC',fontsize=16)
 plt.legend()
 plt.show()
 
-# Con respecto a la curva ROC-AUC no se puede visualizar una clara diferencia entre las curvas de la
-# combinacion 2 y 3, sin embargo, se puede observar que la curva de la combinacion 1 parece estar
-# por debajo en comparacion con el de las demas combinaciones, lo cual nos dice que no tiene un buen
-# ratio comparandola con las demas al momento de clasificar una muestra con la clase que le corresponde
-# (VP, FP).
+# Con respecto a la curva ROC-AUC no se puede visualizar una clara diferencia entre las curvas de la combinación
+# 2 y 3, sin embargo, se puede observar que la curva de la primera combinación parece estar por debajo en
+# comparación con el de las demás combinaciones, lo cual nos dice que no tiene un buen ratio comparándola con
+# las demás al momento de clasificar una muestra con la clase que le corresponde (VP, FP).
 
 print("AUC primera comb.: %.2f%%" % (auc_2a * 100.0))
 print("AUC segunda comb.: %.2f%%" % (auc_2b * 100.0))
 print("AUC tercera comb.: %.2f%%" % (auc_2c * 100.0))
 
-# Por ultimo, con un valor porcentual de la métrica de la curva, podemos tomar una decision final
-# respecto a que combinacion elegir. Tomar esta decision no sera muy dificil, ya que en 3 de las 4
-# pruebas de evaluacion observamos claramente que la combinacion 3 es la que presento mejores resultados
-# en comparacion con las demas combinaciones, aunque la diferencia entre estas sea porcentual, es por 
-# ello que el modelo construido con esta combinacion sera usado como referente del conjunto de
-# "Hiperparametros para datos con outliers y con codificacion manual".
+# Por último, con un valor porcentual de la métrica de la curva, podemos tomar una decisión final respecto a
+# que combinación elegir. Tomar esta decisión no será muy difícil, ya que en 3 de las 4 pruebas de evaluación
+# observamos claramente que la tercera combinación es la que presentó mejores resultados en comparación con las
+# demás combinaciones, aunque la diferencia entre estas sea porcentual, es por ello que el modelo construido
+# con esta combinación será usado como referente del conjunto de "Hiperparametros para datos con outliers y
+# con codificación manual".
 
 
 #------------------------------
-# HIPERPARÁMETROS PARA DATOS SIN OUTLIERS Y SIN CODIFICACION MANUAL
+# HIPERPARÁMETROS PARA DATOS SIN OUTLIERS Y SIN CODIFICACIÓN MANUAL
 
 def objective(trial):   
 
@@ -1446,7 +1429,7 @@ def objective(trial):
               "loss_function": "Logloss",
               "eval_metric": "AUC",
               "task_type": "GPU",
-              "od_type" : "Iter",  # Parametros relacionados con early stop
+              "od_type" : "Iter",
               "od_wait" : 30,
               "use_best_model": True,
               "random_seed": 42}
@@ -1481,28 +1464,28 @@ best_3 = study.trials_dataframe()
 # 75.72% | iterarions=1000, learning_rate=0.115247, depth=10, l2_leaf_reg=7.87387, random_strength=19, bagging_temperature=1, max_ctr_complexity=6
 # 75.66% | iterarions=700, learning_rate=0.0431437, depth=10, l2_leaf_reg=7.91287, random_strength=14, bagging_temperature=0, max_ctr_complexity=4
 
-# Procederemos a entrenar un nuevo modelo XGBoost en base a las tres combinaciones de hiperparámetros
-# obtenidas para determinar cual de ellas presenta mejores resultados al clasificar nuestros datos
+# Procederemos a entrenar modelos CatBoost en base a estas tres combinaciones de hiperparámetros obtenidas para
+# determinar cuál de ellas presenta mejores resultados al clasificar nuestros datos.
 
-# Identificación de variables categoricas
-categorical_features_indices = np.where(data2.dtypes == np.object)[0]
-train_pool = Pool(X2_train, y2_train, cat_features = categorical_features_indices)
-test_pool = Pool(X2_test, y2_test, cat_features = categorical_features_indices)
+# Identificación de variables categóricas
+categorical_features_indices3 = np.where(data2.dtypes == np.object)[0]
+train_pool3 = Pool(X2_train, y2_train, cat_features = categorical_features_indices3)
+test_pool3 = Pool(X2_test, y2_test, cat_features = categorical_features_indices3)
 
 # Para la primera combinación
 cb_3a = CatBoostClassifier(iterations=900, learning_rate=0.118849, depth=7, l2_leaf_reg=9.48661, random_strength=15,
                             bagging_temperature=1, max_ctr_complexity= 6, auto_class_weights= "Balanced", loss_function = "Logloss",
                             eval_metric = "AUC", task_type= "GPU", use_best_model= True, random_seed=42)
 
-cb_3a.fit(train_pool, eval_set = test_pool)
+cb_3a.fit(train_pool3, eval_set = test_pool3, logging_level="Silent")
 y_pred_3a = cb_3a.predict(X2_test)
 
-# Para la segunda combinación #Utilizando random seed
+# Para la segunda combinación
 cb_3b = CatBoostClassifier(iterations=1000, learning_rate=0.115247, depth=10, l2_leaf_reg=7.87387, random_strength=19,
                             bagging_temperature=1,  max_ctr_complexity= 6, auto_class_weights= "Balanced", loss_function = "Logloss",
                             eval_metric = "AUC", task_type= "GPU", use_best_model= True, random_seed=42)
 
-cb_3b.fit(train_pool, eval_set = test_pool)
+cb_3b.fit(train_pool3, eval_set = test_pool3, logging_level="Silent")
 y_pred_3b = cb_3b.predict(X2_test)
 
 # Para la tercera combinación
@@ -1510,7 +1493,7 @@ cb_3c = CatBoostClassifier(iterations=700, learning_rate=0.0431437, depth=10, l2
                             bagging_temperature=0, max_ctr_complexity= 4, auto_class_weights= "Balanced", loss_function = "Logloss",
                             eval_metric = "AUC", task_type= "GPU", use_best_model= True, random_seed=42)
 
-cb_3c.fit(train_pool, eval_set = test_pool)
+cb_3c.fit(train_pool3, eval_set = test_pool3, logging_level="Silent")
 y_pred_3c = cb_3c.predict(X2_test)
 
 
@@ -1550,11 +1533,11 @@ print(report_3b)
 print("-------------------------------------------------")
 print(report_3c)
 
-# Observamos demasiada simulitud entre los puntajes obtenidos por las 3 combinaciones, donde la combinacion que
-# sobresale en comparacion de las demas en puntaje F1, no lo hace en Accuracy, es por ello que necesitamos mas
-# indicios (metricas de evaluacion) que nos indiquen que combinacion se adapta mejor a nuestros datos.
-
-# Procederemos a graficar la matriz de confusión y la curva ROC-AUC.
+# Observamos que la primera combinación tiene un rendimiento inferior en comparación con las demás combinaciones,
+# y que existe mucha similitud entre los puntajes obtenidos por las combinaciones 2 y 3, donde la combinación
+# que sobresale en comparación con la otra en puntaje F1, no lo hace en Accuracy, y la que lo hace en Accuracy,
+# no lo hace en F1, es por ello que necesitamos más indicios (métricas de evaluación) que nos indiquen que
+# combinación se adapta mejor a nuestros datos.
 
 fig, ax = plt.subplots(1, 3, figsize=(20, 5))
 
@@ -1569,13 +1552,14 @@ ax[2].set_title("COMBINACIÓN 3",fontsize=14)
 
 plt.show()
 
-# De las matrices de confusion observamos que la combinacion 2 es el que mejor ratio en verdaderos positivos 
-# tiene, sin embargo, es muy inferior en comparacion con las demas combinaciones con respecto a los falsos
-# positivos. Una comportamiento similar se observa en la combinacion 3, donde la situacion es la misma pero
-# invertida, donde el mejor ratio de prediccion se lo llevan los falsos positivos y el peor los verdaderos
-# positivos. Con respecto a la combinacion 1 podemos observar un mejor balance entre ambos ratios de prediccion,
-# puesto que la cantidad de muestras catalogadas correctamente parece estar en un termino medio entre las demas
-# combinaciones, es por ello que en el area de las matrices de confusion preferimos la combinacion 1.
+# De las matrices de confusión observamos que la segunda combinación es el que mejor ratio en VP tiene, sin
+# embargo, es muy inferior en comparación con las demás combinaciones con respecto a los FP. Un comportamiento
+# similar se observa en la tercera combinación, donde la situación es la misma pero invertida, donde el mejor
+# ratio de predicción se lo llevan los FP y el peor los VP. Sin embargo, ya que su ratio de VP es ligeramente
+# mayor al de la primera combinación, e inferior al de la segunda combinación, podemos decir que se encuentra
+# en término medio, y esto en conjunto con su indiscutible superioridad en la predicción de FP, lo hace un
+# modelo mejor en comparación con los demás, es por ello que en el área de las matrices de confusión preferimos
+# eta combinación.
 
 y_pred_prob3a = cb_3a.predict_proba(X2_test)[:,1]
 fpr_3a, tpr_3a, thresholds_3a = roc_curve(y2_test, y_pred_prob3a)
@@ -1595,28 +1579,28 @@ plt.title('Curva ROC-AUC',fontsize=16)
 plt.legend()
 plt.show()
 
-# Con respecto a la curva ROC-AUC podemos identificar que aparentemente la combinacion 2 y 3 son las que presentan
-# un mejor ratio en VP y FP, sin embargo, la diferencia no es tan clara con respecto a la combinacion 1 puesto
-# que hay momentos en donde presentan una inclinicacion similar, es por ello que calcularemos el valor de su
-# metrica con el fin de poder tener una mejor interpretabilidad.
+# Con respecto a la curva ROC-AUC podemos identificar que aparentemente las combinaciones 2 y 3 son las que
+# presentan un mejor ratio en VP y FP, sin embargo, la diferencia entre estas no es tan clara, puesto que hay
+# momentos en donde presentan una inclinación similar, y otros en donde una muestra superioridad sobre la otra,
+# es por ello que calcularemos el valor de su métrica con el fin de poder tener una mejor interpretabilidad.
 
 print("AUC primera comb.: %.2f%%" % (auc_3a * 100.0))
 print("AUC segunda comb.: %.2f%%" % (auc_3b * 100.0))
 print("AUC tercera comb.: %.2f%%" % (auc_3c * 100.0))
 
-# Con esto ultimo, observamos que el mejor valor AUC se lo lleva la combinacion 3, el peor valor la combinacion
-# 2, y en termino medio se encuentra la combinacion 1. No obstante, la diferencia entre estos valores es muy
-# pequeña, por lo cual no podemos decir que una combinacion mucho mas efectiva que otra. Entonces, uniendo los
-# resultados de todas las metricas vistas, podemos considerar a todas las combinaciones como buenas, ya que
-# no existe una gran diferencia en efectividad de prediccion entre ellas, sin embargo, en esta ocacion
-# eligiremos la combinacion 1 como ganadora, ya que es la que presenta un equilibrio entre predecir correctamente
-# aquellas muestras que son positivas (deposito a plazo fijo) y negativas (no deposito a plazo fijo), por lo 
-# tanto, utilizaremos el modelo construido con esta combinacion como referente del conjunto de "Hiperparametros
-# para datos sin outliers y sin codificacion manual".
+# Con esto último, observamos que el mejor valor AUC se lo lleva la tercera combinación, el peor valor la primera
+# combinación, y en término medio se encuentra la segunda combinación. No obstante, la diferencia entre estos
+# valores es muy pequeña, por lo cual no podemos decir que una combinación es mucho más efectiva que otra.
+# Entonces, uniendo los resultados de todas las métricas vistas, podemos considerar a todas las combinaciones
+# como buenas, ya que no existe una gran diferencia en efectividad de predicción entre ellas, sin embargo, en
+# esta ocasión elegiremos la tercera combinación como ganadora, ya que es la que presenta un equilibrio entre
+# predecir correctamente aquellas muestras que son positivas (depósito a plazo fijo) y negativas (no depósito
+# a plazo fijo), por lo tanto, utilizaremos el modelo construido con esta combinación como referente del
+# conjunto de "Hiperparametros para datos sin outliers y sin codificación manual".
 
 
 #------------------------------
-# HIPERPARÁMETROS PARA DATOS SIN OUTLIERS Y CON CODIFICACION MANUAL
+# HIPERPARÁMETROS PARA DATOS SIN OUTLIERS Y CON CODIFICACIÓN MANUAL
 
 def objective(trial):   
 
@@ -1631,7 +1615,7 @@ def objective(trial):
               "loss_function": "Logloss",
               "eval_metric": "AUC",
               "task_type": "GPU",
-              "od_type" : "Iter",  # Parametros relacionados con early stop
+              "od_type" : "Iter",
               "od_wait" : 30,
               "use_best_model": True,
               "random_seed": 42}
@@ -1666,23 +1650,23 @@ best_4 = study.trials_dataframe()
 # Procederemos a entrenar un nuevo modelo XGBoost en base a las tres combinaciones de hiperparámetros
 # obtenidas para determinar cual de ellas presenta mejores resultados al clasificar nuestros datos
 
-train_pool = Pool(X2_train_cod, y2_train_cod)
-test_pool = Pool(X2_test_cod, y2_test_cod)
+train_pool4 = Pool(X2_train_cod, y2_train_cod)
+test_pool4 = Pool(X2_test_cod, y2_test_cod)
 
 # Para la primera combinación
 cb_4a = CatBoostClassifier(iterations=600, learning_rate=0.0856975, depth=9, l2_leaf_reg=7.42101, random_strength=0,
                             bagging_temperature=0, max_ctr_complexity=10, auto_class_weights= "Balanced", loss_function = "Logloss",
                             eval_metric = "AUC", task_type= "GPU", use_best_model= True, random_seed=42)
 
-cb_4a.fit(train_pool, eval_set = test_pool)
+cb_4a.fit(train_pool4, eval_set = test_pool4, logging_level="Silent")
 y_pred_4a = cb_4a.predict(X2_test_cod)
 
-# Para la segunda combinación #Utilizando random seed
+# Para la segunda combinación
 cb_4b = CatBoostClassifier(iterations=1200, learning_rate=0.0274008, depth=10, l2_leaf_reg=7.42817, random_strength=0,
                             bagging_temperature=1,  max_ctr_complexity=1, auto_class_weights= "Balanced", loss_function = "Logloss",
                             eval_metric = "AUC", task_type= "GPU", use_best_model= True, random_seed=42)
 
-cb_4b.fit(train_pool, eval_set = test_pool)
+cb_4b.fit(train_pool4, eval_set = test_pool4, logging_level="Silent")
 y_pred_4b = cb_4b.predict(X2_test_cod)
 
 # Para la tercera combinación
@@ -1690,7 +1674,7 @@ cb_4c = CatBoostClassifier(iterations=700, learning_rate=0.0854912, depth=10, l2
                             bagging_temperature=0, max_ctr_complexity=10, auto_class_weights= "Balanced", loss_function = "Logloss",
                             eval_metric = "AUC", task_type= "GPU", use_best_model= True, random_seed=42)
 
-cb_4c.fit(train_pool, eval_set = test_pool)
+cb_4c.fit(train_pool4, eval_set = test_pool4, logging_level="Silent")
 y_pred_4c = cb_4c.predict(X2_test_cod)
 
 
@@ -1730,10 +1714,9 @@ print(report_4b)
 print("-------------------------------------------------")
 print(report_4c)
 
-# Respecto a esta combinacion de metricas se observa claramente que la tercera combinacion es la que mejores
-# resultados presenta, aunque la diferencia de sus puntajes comparados con el de las demas combinaciones sea
-# relativamente pequeña. Tambien podemos observar que los puntajes de la primera combinacion son los que menores
-# valores presentaron.
+# Respecto a esta combinación de métricas se observa claramente que la primera combinación es la que mejores
+# resultados presenta, aunque la diferencia de sus puntajes comparados con el de las demás combinaciones sea
+# relativamente pequeña.
 
 fig, ax = plt.subplots(1, 3, figsize=(20, 5))
 
@@ -1748,10 +1731,9 @@ ax[2].set_title("COMBINACIÓN 3",fontsize=14)
 
 plt.show()
 
-# Las matrices de confusion dejan en clara evidencia la superioridad predictora del modelo cosntruido con la
-# tercera combinacion, ya que este presenta un mejor ratio en la clasificacion de muestras como VP y FP en 
-# comparacion con las demas. Estas matrices tambien nos permiten ir concluyendo que la primera combinacion tiene
-# un rendimiento predictivo inferior en comparacion con las demas, ya que presenta peores resultados de clasificacion
+# De las matrices de confusión observamos que todas las combinaciones tienen resultados muy similares los unos
+# con los otros, por lo tanto, es difícil decidir en este apartado de evaluación que combinación resulta más
+# efectiva en la predicción clientes solicitantes y no solicitantes de un depósito a plazo fijo.
 
 y_pred_prob4a = cb_4a.predict_proba(X2_test_cod)[:,1]
 fpr_4a, tpr_4a, thresholds_4a = roc_curve(y2_test_cod, y_pred_prob4a)
@@ -1771,20 +1753,22 @@ plt.title('Curva ROC-AUC',fontsize=16)
 plt.legend()
 plt.show()
 
-# Con respecto a la curva ROC-AUC, no podemos identificar claramente que combinacion es superior a las demas, ya
-# que existen algunos trazos en los que una combinacion es inferior a otra, y otros en los que es superior a las
-# demas, es por ello que calcularemos el valor de su metrica con el fin de poder tener una mejor interpretabilidad
+# Con respecto a la curva ROC-AUC, no podemos identificar claramente que combinación es superior a las demás,
+# ya que existen algunos trazos en los que una combinación es inferior a otra, y otros en los que es superior
+# a las demás, es por ello que calcularemos el valor de su métrica con el fin de poder tener una mejor
+# interpretabilidad.
 
 print("AUC primera comb.: %.2f%%" % (auc_4a * 100.0))
 print("AUC segunda comb.: %.2f%%" % (auc_4b * 100.0))
 print("AUC tercera comb.: %.2f%%" % (auc_4c * 100.0))
 
-# Estos resultados indican que la tercera combinacion posee un mejor ratio en la correcta prediccion de nuestros
-# datos, y que como ya sospechabamos anteriormente, la primera combinacion tiene el peor rendimiento predictivo en 
-# comparacion con las demas. Es por ello que uniendo estos resultados con el de las demas metricas anteriormente
-# vistas, facilmente podemos concluir que el modelo construido con la tercera combinacion es el que mejor clasifica
-# nuestros datos, por lo tanto, sera usado como referente del conjunto de "Hiperparametros para datos sin outliers
-# y con codificacion manual".
+# Estos resultados indican que la primera combinación posee un mejor ratio en la correcta predicción de nuestros
+# datos, sin embargo, cabe recalcar que la diferencia de este valor comparado con el de las demás combinaciones
+# es muy pequeña, es por ello que elegir cualquiera de estas combinaciones presentadas sería una opción correcta,
+# ya que todas tienen un rendimiento muy similar. Para este caso, basándonos en la diferencia porcentual de
+# valores de métrica ya vistos, elegiremos el modelo construido con la primera combinación como el que mejor
+# clasifica nuestros datos, por lo tanto, será usado como referente del conjunto de "Hiperparametros para datos
+# sin outliers y con codificación manual".
 
 
 #-----------------------------
@@ -1792,8 +1776,8 @@ print("AUC tercera comb.: %.2f%%" % (auc_4c * 100.0))
 #-----------------------------
 
 # Después de haber elegido las cuatro mejores combinaciones en base al entrenamiento de conjuntos con diferentes
-# tipos de transformación y codificacion, procederemos a compararlos entre sí para quedarnos con un modelo definitivo
-# el cual mejores resultados de evaluación tenga.
+# tipos de transformación y codificación, procederemos a compararlos entre sí para quedarnos con un modelo
+# definitivo el cual mejores resultados de evaluación tenga.
 
 print("F1 Primer conjunto: %.2f%%" % (f1_1b * 100.0))
 print("Accuracy Primer conjunto: %.2f%%" % (acc_1b * 100.0))
@@ -1801,23 +1785,25 @@ print("-------------------------------")
 print("F1 Segundo conjunto: %.2f%%" % (f1_2c * 100.0))
 print("Accuracy Segundo conjunto: %.2f%%" % (acc_2c * 100.0))
 print("-------------------------------")
-print("F1 Tercer conjunto: %.2f%%" % (f1_3b * 100.0))
-print("Accuracy Tercer conjunto: %.2f%%" % (acc_3b * 100.0))
+print("F1 Tercer conjunto: %.2f%%" % (f1_3c * 100.0))
+print("Accuracy Tercer conjunto: %.2f%%" % (acc_3c * 100.0))
 print("-------------------------------")
-print("F1 Cuarto conjunto: %.2f%%" % (f1_4c * 100.0))
-print("Accuracy Cuarto conjunto: %.2f%%" % (acc_4c * 100.0))
+print("F1 Cuarto conjunto: %.2f%%" % (f1_4a * 100.0))
+print("Accuracy Cuarto conjunto: %.2f%%" % (acc_4a * 100.0))
 
 print(report_1b)
 print("-------------------------------------------------")
 print(report_2c)
 print("-------------------------------------------------")
-print(report_3b)
+print(report_3c)
 print("-------------------------------------------------")
-print(report_4c)
+print(report_4a)
 
-# De principio estamos observando que el modelo del primer conjunto (Datos rebalanceados por XGBoost) tiene
-# un rendimiento superior en cuanto a puntaje F1 se refiere, y en cuanto a precisión tiene un puntaje similar
-# con el modelo de la combinación 2 (Datos rebalanceados por SMOTE-NC).
+# En principio observamos que el modelo construido con el tercer conjunto (Datos sin outliers y sin codificación
+# manual) presenta un rendimiento superior en cuanto a Accuracy se refiere, sin embargo, en cuanto a puntaje F1,
+# es inferior al modelo construido con el cuarto conjunto (Datos sin outliers y con codificación manual). Los
+# conjuntos de datos que si presentan outliers parecen tener un rendimiento inferior en comparación de los
+# conjuntos a los cuales si se les realizo un tratamiento de estos valores.
 
 fig, ax = plt.subplots(2, 2, figsize=(20, 5))
 
@@ -1827,50 +1813,193 @@ ax[0][0].set_title("PRIMER CONJUNTO",fontsize=14)
 sns.heatmap(confusion_matrix(y_test_cod, y_pred_2c), annot=True, fmt = "d", linecolor="k", linewidths=3, ax=ax[0,1])
 ax[0][1].set_title("SEGUNDO CONJUNTO",fontsize=14)
 
-sns.heatmap(confusion_matrix(y2_test, y_pred_3b), annot=True, fmt = "d", linecolor="k", linewidths=3, ax=ax[1,0])
+sns.heatmap(confusion_matrix(y2_test, y_pred_3c), annot=True, fmt = "d", linecolor="k", linewidths=3, ax=ax[1,0])
 ax[1][0].set_title("TERCER CONJUNTO",fontsize=14)
 
-sns.heatmap(confusion_matrix(y2_test_cod, y_pred_4c), annot=True, fmt = "d", linecolor="k", linewidths=3, ax=ax[1,1])
+sns.heatmap(confusion_matrix(y2_test_cod, y_pred_4a), annot=True, fmt = "d", linecolor="k", linewidths=3, ax=ax[1,1])
 ax[1][1].set_title("CUARTO CONJUNTO",fontsize=14)
 
 plt.show()
 
-# De nuestras matrices de confusión observamos que el modelo del primer conjunto tiene ligeramente una mayor
-# sensibilidad en comparación con el del segundo conjunto, y que el modelo del tercer conjunto tiene un bajo
-# rendimiento en la identificación de verdaderos positivos.
+# Las matrices de confusión nos dejan ver que la competencia en la elección del mejor modelo predictivo se
+# encuentra entre los modelos construidos con el tercer y cuarto conjunto (Datos sin outliers), ya que presentan
+# superioridad predictora en comparación con los modelos construidos con el primer y segundo conjunto (Datos
+# con outliers). En cuanto al tercer conjunto, podemos observar que su punto fuerte es la predicción de muestras
+# catalogadas con clase negativa (0), y en cuanto al cuarto conjunto, su punto fuerte es la predicción de muestras
+# catalogadas con clase positiva (1). Dependiendo de las necesidades de la empresa en tomar más atención a
+# aquellos clientes que soliciten o no soliciten un depósito a plazo fijo, se podría elegir cualquier de estos
+# dos modelos como valido.
 
+plt.figure(figsize=(16, 8))
 plt.plot([0, 1], [0, 1], 'k--' )
 plt.plot(fpr_1b, tpr_1b, label='Primer conjunto',color = "r")
 plt.plot(fpr_2c, tpr_2c, label='Segundo conjunto',color = "g")
-plt.plot(fpr_3b, tpr_3b, label='Tercer conjunto',color = "b")
-plt.plot(fpr_4c, tpr_4c, label='Cuarto conjunto',color = "y")
+plt.plot(fpr_3c, tpr_3c, label='Tercer conjunto',color = "b")
+plt.plot(fpr_4a, tpr_4a, label='Cuarto conjunto',color = "y")
 plt.xlabel('Ratio de Falsos Positivos')
 plt.ylabel('Ratio de Verdaderos Positivos')
 plt.title('Curva ROC-AUC',fontsize=16)
 plt.legend()
 plt.show()
 
-# El gráfico de la curva ROC-AUC nos da un resultado muy interesante, ya que podemos ver la superioridad del
-# modelo del primer conjunto en cuanto a la predicción correcta de verdaderos positivos y falsos positivos en
-# comparación con los demás modelos, por lo tanto, ya se puede deducir cual es la combinación de parámetros
-# que mejor se ajustan a nuestros datos.
+# Con respecto a la curva ROC-AUC, observamos una clara similitud entre los modelos construidos con el tercer y
+# cuarto conjunto, como anteriormente habíamos visto, estos modelos presentan superioridad predictiva en
+# comparación con los construidos por el primer y segundo conjunto, lo cual nos da más motivos para ir
+# concluyendo que estos modelos no serán elegidos como definitivos. Para poder tener una visión más clara acerca
+# de qué conjunto (tercero o cuarto) presenta una mejor sensibilidad predictora, calcularemos el valor de la
+# métrica AUC.
 
 print("AUC Primer conjunto: %.2f%%" % (auc_1b * 100.0))
 print("AUC Segundo conjunto: %.2f%%" % (auc_2c * 100.0))
-print("AUC Tercer conjunto: %.2f%%" % (auc_3b * 100.0))
-print("AUC Cuarto conjunto: %.2f%%" % (auc_4c * 100.0))
+print("AUC Tercer conjunto: %.2f%%" % (auc_3c * 100.0))
+print("AUC Cuarto conjunto: %.2f%%" % (auc_4a * 100.0))
 
-# Finalmente, con estos puntajes calculados, llegamos a la decision de utilizar el mejor modelo proveniente
-# del primer conjunto (Datos rebalanceados por XGBoost), debido a que a lo largo de todo el proceso de
-# selección, mostró superioridad frente a los demás modelos.
+# Estos resultados indican que el modelo construido con el tercer conjunto presenta un ratio mayor en la
+# predicción de VP y FP en comparación con los demás conjuntos, aunque la diferencia entre este conjunto y el
+# cuarto es mínima. Entonces, uniendo los resultados de las demás métricas de evaluación anteriormente vistas,
+# podemos llegas a concluir que tanto el modelo construido con el tercer conjunto como con el cuarto, son
+# completamente válidos para ser considerados como definitivos, y que su elección depende mucho del objetivo
+# que tenga el cliente o la empresa en cuanto a que clase necesita enfocar la predicción. En esta ocasión,
+# tomaremos el modelo construido con el tercer conjunto como definitivo, ya que presenta una ligera superioridad
+# en cuanto a AUC Y Accuracy en comparación con los demás modelos.
 
-# Combinación de parámetros del modelo final:
-# tree_method="gpu_hist", objective="binary:logistic", eval_metric="auc", use_label_encoder=False,
-# n_estimators=400, max_depth=18, learning_rate=0.0013, subsample=0.2, colsample_bytree=0.9, seed=21
+# Combinacion de parametros del modelo final:
+
+# iterarions=700, learning_rate=0.0431437, depth=10, l2_leaf_reg=7.91287, random_strength=14, bagging_temperature=0, max_ctr_complexity=4
 
 # Guardado del modelo
-joblib.dump(xgb_1c, "XGboost_Model_Churn")
+joblib.dump(cb_3c, "CatBoost_Model_BankMarketing")
 
 
+#-----------------------------
+# INTERPRETACIÓN DEL MODELO
+#-----------------------------
+
+# Esta sección estará dedicada a entender como las variables y los posibles valores que estas tomen afectan en
+# la decisión del modelo sobre clasificar a un cliente como solicitante o no solicitante de un depósito a plazo
+# fijo. Para ello, haremos uso de la función de extracción de importancia de características implementada por
+# CatBoost, y de los valores SHAP basados en la teoría de juegos.
+
+# IMPORTANCIA DE CARACTERÍSTICAS DE CATBOOST
+#-------------------------------------------
+
+columns = data2.iloc[:,:-1].columns.values  # Extracción de los nombres de las variables independientes
+
+pd.DataFrame({'Importancia': cb_3c.get_feature_importance(), 'Variable': columns}).sort_values(by=['Importancia'],
+                                                                                               ascending=False)
+
+
+# El marco de datos obtenido nos dice que la variable "month" tiene un papel fundamental en la clasificación
+# de una muestra como solicitante o no solicitante de un depósito a plazo fijo. Esto tiene sentido, ya que en
+# la sección del análisis de datos habíamos observado que existían algunos meses en los que era muy probable
+# que el cliente aceptase solicitar este tipo de depósito (marzo, septiembre, octubre y diciembre) y otros en
+# los que no (mayo). Por otra parte, también observamos que variables como "poutcome" y "contact" juegan un
+# papel crucial en dicha predicción, puesto que aquellos clientes que habían solicitado este depósito en la
+# campaña anterior, con mucha probabilidad volverían a solicitarlo en la campaña actual, mientras que aquellos
+# cuyo medio de contacto era desconocido por el banco, tenían menos probabilidades de solicitar este depósito.
+# A la vez que también se puede apreciar que variables como "default" (mora crediticia con el banco) o
+# "previous" (número de contactos realizados en la anterior campaña) aportan poco en la decisión final del modelo.
+
+
+# VALORES SHAP
+#--------------
+
+X2_train_shap = pd.DataFrame(X2_train)  # Conversión del conjunto de entrenamiento en Dataframe
+X2_train_shap.columns = columns  # Extracción de los nombres de las variables independientes
+
+# Codificación del tipo de variable de Object a Int
+X2_train_shap[["age", "balance", "day", "campaign", "previous"]] = X2_train_shap[["age", "balance", "day", "campaign",
+                                                                                  "previous"]].astype(int)
+
+
+shap_values = cb_3c.get_feature_importance(train_pool3, type='ShapValues')  # Calculo de los valores SHAP 
+expected_value = shap_values[0,-1]  # Extracción de los valores SHAP de la columna dependiente
+shap_values = shap_values[:,:-1]  # Extracción de los valores SHAP de las columnas independientes
+
+
+# Empezaremos por calcular los valores SHAP para las variables de una muestra determinada en nuestro conjunto
+# de datos.
+
+shap.initjs()
+shap.force_plot(expected_value, shap_values[0,:], X2_train_shap.iloc[0,:])
+
+# Observamos que la probabilidad de que un cliente solicite un depósito a plazo fijo aumenta para esta muestra
+# cuando su ocupación (job) es ser estudiante, se le contacto en el mes de mayo (month), el tipo de contacto
+# realizado fue por celular (contact) y solicito este mismo servicio en la campaña anterior (poutcome),
+# mientras que sus probabilidades decrecen si es que este solicito un préstamo de vivienda (housing). Estos
+# hechos respaldan los insights que habíamos obtenido en la sección de análisis de datos, donde pudimos
+# identificar que los clientes que eran estudiantes o jubilados eran propensos a solicitar este depósito, a la
+# vez que si estos habían aceptado solicitar este servicio en la campaña anterior, con mucha probabilidad volverían
+# a hacerlo en la campaña actual, es por ello que en el gráfico, "poutcome = success" tiene un mayor impacto en
+# el impulso del modelo hacia predecir a este cliente como solicitante de un depósito a plazo fijo. Mientras
+# que por su parte, "housing = yes", tiene un impulso para predecir a este cliente como no solicitante de este
+# tipo de depósito.
+
+shap.force_plot(expected_value, shap_values[100,:], X2_train_shap.iloc[100,:])
+
+# Por otra parte, en este ejemplo observamos que existen muchas más variables con valores que propician al
+# modelo a tomar la decisión de que cliente no será solicitante de un depósito a plazo fijo, ya que volviendo
+# a recalcar, como anteriormente habíamos visto en la sección de análisis de datos, cuando el tipo de contacto
+# que se tenía con el cliente era desconocido por el banco, o cuando no se tenía información acerca si este
+# había aceptado solicitar este tipo de depósito en la campaña anterior, sus probabilidades de aceptar solicitar
+# el depósito en la campaña actual se veían reducidas, es por ello que este comportamiento se ve reflejado en
+# el gráfico de SHAP mediante barras color azul en dirección a la izquierda.
+
+shap.force_plot(expected_value, shap_values[1000,:], X2_train_shap.iloc[1000,:])
+
+# Esta muestra presenta un comportamiento similar al de la primera, en donde aquellas variables que impulsan al
+# modelo a tomar la decisión de clasificar a este cliente como solicitante de un depósito a plazo fijo son
+# "poutcome", "contact", "month" y "job", cuando estas adquieren un valor de "succes", "cellular", "may" y
+# "blue-collar" respectivamente. Mientras que las variables que impulsan al modelo a tomar la decisión de
+# clasificarlo como no solicitante son "housing" y "campaign", cuando estas adquieren un valor de "yes" y "6"
+# respectivamente. Algunos de estos valores pueden dar la ilusión de contradecir los análisis anteriormente
+# vistos, como en el caso de "month = may" donde pudimos observar que en este mes habían más posibilidades de
+# que el cliente no aceptara solicitar este tipo de depósito, sin embargo, debido a que estamos hablando de
+# posibilidad y no de hechos, se asume que aunque exista una alta de probabilidad de rechazar el depósito en
+# este mes, aún existen probabilidades de no hacerlo, es por ello que el grafico se muestra a "month = may"
+# como una variable que influenció (aunque en pequeña medida) a la decisión del modelo a clasificar a este cliente como solicitante de un depósito a plazo fijo.
+
+# Por último, graficaremos un resumen general del impacto de los valores que pueden tomar cada una de nuestras
+# variables en la decisión del modelo. Cabe mencionar que actualmente esta gráfica solo funciona para variable
+# numéricas, puesto que son las únicas a las que se le puede asociar valores altos y bajos.
+
+shap.summary_plot(shap_values, X2_train_shap)
+
+# Este grafico aparte de mostrar en orden descendente la importancia de cada variable para la predicción del
+# modelo, nos muestra cómo afectan tanto los valores altos como los bajos en su decisión de clasificar a un
+# cliente como solicitante o no solicitante de un depósito a plazo fijo. Donde podemos observar que un saldo
+# (balance) bajo en la cuenta del cliente influye a que el modelo lo catalogue como no solicitante, o que una
+# edad (age) mayor influye a que este lo catalogue como solicitante.
+
+# Todos estos gráficos son muy importantes, ya que nos proporcionan insights muy útiles para entender a mayor
+# profundidad el comportamiento o características de los clientes que tienden o no a solicitar el depósito
+# ofrecido por el banco, lo cual, ayudara sin duda a los planes comerciales de la empresa.
+
+
+#------------------------------------------------------------------------------------------------------------
+#                                                CONCLUSIONES
+#------------------------------------------------------------------------------------------------------------
+
+# El hecho de saber si un cliente estuvo afiliado al servicio de depósito a plazo fijo del banco en el pasado
+# ayuda en gran medida a decidir si este volverá a solicitar nuevamente este servicio, ya que se evidenció que
+# aquellos clientes que sí estuvieron afiliados a este tipo de depósito en la campaña anterior, volvieron a
+# solicitarlo en la campaña actual.
+
+# Existe una tendencia en los clientes en solicitar préstamos de vivienda en mayo, lo que causa que en este mes
+# haya menos posibilidades de conseguir que los clientes acepten solicitar este tipo de depósito. Es por ello
+# que se puede recomendar al banco evitar invertir muchos esfuerzos y recursos en la persuasión de clientes en
+# este mes del año, y centrar sus recursos en explotar otros meses de poca actividad como marzo, septiembre,
+# octubre o diciembre, en donde se observó una tendencia de los clientes a solicitar este depósito.
+
+# Se evidencio que el tratamiento de outliers previo a la construcción de un modelo predictivo ayudó a que este
+# obtuviera un rendimiento mucho mejor frente a modelos construidos con datos sin procesamiento previo de este
+# tipo de valores. En donde la técnica utilizada fue la imputación iterativa, aprovechando la potencia de los
+# bosques aleatorios para reemplazar estos valores atípicos por valores que se asemejen a un comportamiento
+# normal en nuestro conjunto de datos.
+
+# Gracias a los valores SHAP, es posible dar una explicación acerca del funcionamiento y la relevancia que tiene
+# cada una de nuestras variables y los posibles valores que puedan tomar en la predicción de modelos de
+# aprendizaje automático de caja negra, aportando información muy útil que puede complementar en gran medida al
+# análisis de datos que se haya realizado con anterioridad, o servir de antesala para nuevos análisis futuros.
 
 
